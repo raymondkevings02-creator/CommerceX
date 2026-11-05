@@ -92,11 +92,19 @@
 
     .checkout-product {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
       gap: 15px;
       padding: 15px 0;
       border-bottom: 1px solid rgba(255,255,255,.09);
+    }
+
+    .checkout-product-image {
+      width: 75px;
+      height: 75px;
+      object-fit: cover;
+      border-radius: 10px;
+      flex-shrink: 0;
     }
 
     .checkout-product strong {
@@ -178,6 +186,10 @@
       line-height: 1.6;
     }
 
+    .payment-info p {
+      margin: 6px 0;
+    }
+
     .confirm-button {
       width: 100%;
       border: none;
@@ -228,6 +240,10 @@
 
       .checkout-header {
         margin-bottom: 30px;
+      }
+
+      .checkout-total {
+        font-size: 17px;
       }
     }
   </style>
@@ -288,18 +304,18 @@
               required
             >
           </div>
-          
-<div class="checkout-field">
-  <label for="customerEmail">Adresse e-mail *</label>
-  <input
-    type="email"
-    id="customerEmail"
-    name="customerEmail"
-    placeholder="exemple@gmail.com"
-    autocomplete="email"
-    required
-  >
-</div>
+
+          <div class="checkout-field">
+            <label for="customerEmail">Adresse e-mail *</label>
+            <input
+              type="email"
+              id="customerEmail"
+              name="customerEmail"
+              placeholder="exemple@gmail.com"
+              autocomplete="email"
+              required
+            >
+          </div>
 
           <div class="checkout-field">
             <label for="customerPhone">Téléphone *</label>
