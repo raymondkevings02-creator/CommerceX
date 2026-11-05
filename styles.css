@@ -254,3 +254,96 @@ h1,h2,h3,p{margin-top:0}h1{font:600 clamp(42px,5.4vw,72px)/1.04 var(--display);l
     flex-direction: column;
   }
 }
+/* ===== PANIER COMMERCEX ===== */
+
+.cart-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+  opacity: 0;
+  visibility: hidden;
+  transition: .3s ease;
+}
+
+.cart-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.cart-panel {
+  width: 100%;
+  max-width: 420px;
+  height: 100%;
+  padding: 25px;
+  background: #11182b;
+  color: #fff;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: .3s ease;
+}
+
+.cart-overlay.active .cart-panel {
+  transform: translateX(0);
+}
+
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.cart-header h2 {
+  color: #62e6ed;
+}
+
+.cart-item {
+  background: #151e35;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 12px;
+}
+
+.cart-item strong {
+  color: #62e6ed;
+}
+
+.cart-item p {
+  margin: 8px 0;
+}
+
+.cart-item button {
+  background: #9b82ff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.cart-footer {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,.15);
+}
+
+.cart-footer strong {
+  color: #62e6ed;
+}
+
+#checkoutButton {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #62e6ed, #9b82ff);
+  color: #090d1b;
+  font-weight: bold;
+  cursor: pointer;
+}
