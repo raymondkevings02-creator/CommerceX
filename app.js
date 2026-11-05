@@ -51,7 +51,88 @@ $("#cartButton").addEventListener("click", () => {
 $("#notifyButton")?.addEventListener("click", () => {
   toast("Merci de votre intérêt pour CommerceX !");
 });
+// ===== GESTION DU PANIER =====
 
+let cart = JSON.parse(localStorage.getItem("commercex_cart") || "[]");
+
+function saveCart() {
+  localStorage.setItem("commercex_cart", JSON.stringify(cart));
+}
+
+function addToCart(product) {
+  const existing = cart.find(item => item.id === product.id);
+
+  if (existing) {
+    if (existing.quantity >= product.stock) {
+      toast("Stock insuffisant !");
+      return;
+    }
+    existing.quantity++;
+  } else {
+    if (product.stock <= 0) {
+      toast("Produit indisponible !");
+      return;
+    }
+
+    cart.push({
+      id: product.id,
+      name: product.name,
+      price: Number(product.price),
+      image_url: product.image_url,
+      stock: product.stock,
+      quantity: 1
+    });
+  }
+
+  saveCart();
+  renderCart();
+  toast("Produit ajouté au panier !");
+}
+
+function renderCart() {
+  const itemsContainer = $("#cartItems");
+  const countElement = $("#cartCount");
+  const totalElement = $("#cartTotal");
+
+  if (!itemsContainer  !countElement  !totalElement) return;
+
+  itemsContainer.replaceChildren();
+
+  let total = 0;
+  let count = 0;
+
+  cart.forEach(item => {
+    total += item.price * item.quantity;
+    count += item.quantity;
+
+    const line = document.createElement("div");
+    line.className = "cart-item";
+
+    const name = document.createElement("strong");
+    name.textContent = item.name;
+
+    const price = document.createElement("p");
+    price.textContent = ${item.price} HTG;
+
+    const quantity = document.createElement("span");
+    quantity.textContent = Quantité : ${item.quantity};
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "Retirer";
+    remove.addEventListener("click", () => {
+      cart = cart.filter(product => product.id !== item.id);
+      saveCart();
+      renderCart();
+    });
+
+    line.append(name, price, quantity, remove);
+    itemsContainer.appendChild(line);
+  });
+
+  countElement.textContent = count;
+  totalElement.textContent = ${total.toFixed(2)} HTG;
+}
 // ==========================================
 // AFFICHAGE DES PRODUITS
 // ==========================================
