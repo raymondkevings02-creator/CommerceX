@@ -116,9 +116,32 @@ async function loadProducts() {
         ? "Disponible : " + product.stock
         : "Rupture de stock";
 
-      details.append(category, name, description, price, stock);
-      card.appendChild(details);
-      container.appendChild(card);
+   // Bouton ajouter au panier
+const addButton = document.createElement("button");
+addButton.type = "button";
+addButton.className = "add-to-cart-button";
+addButton.innerHTML = "🛒 Ajouter au panier";
+
+addButton.addEventListener("click", () => {
+  addToCart(product);
+});
+
+if (product.stock <= 0) {
+  addButton.disabled = true;
+  addButton.textContent = "Rupture de stock";
+}
+
+details.append(
+  category,
+  name,
+  description,
+  price,
+  stock,
+  addButton
+);
+
+card.appendChild(details);
+container.appendChild(card);
     }
   });
 
