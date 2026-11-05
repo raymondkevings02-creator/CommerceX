@@ -3,6 +3,7 @@
    COMMERCEX - APPLICATION JAVASCRIPT
    Supabase + Administration + Catalogue
    Panier + Commandes + Checkout indépendant
+   Notifications e-mail client et administrateur
 ========================================== */
 
 // ==========================================
@@ -332,6 +333,10 @@ async function loadProducts() {
         image.alt = product.name;
         image.loading = "lazy";
 
+        image.onerror = () => {
+          image.style.display = "none";
+        };
+
         card.appendChild(image);
       }
 
@@ -526,6 +531,8 @@ $("#productForm")?.addEventListener("submit", async (event) => {
 
   const button = $("#saveProductButton");
 
+  if (!button) return;
+
   button.disabled = true;
   button.textContent = "Enregistrement...";
 
@@ -541,7 +548,7 @@ $("#productForm")?.addEventListener("submit", async (event) => {
       image_url: editingImageUrl || null
     };
 
-    const file = $("#productImage").files[0];
+    const file = $("#productImage")?.files?.[0];
 
     if (file) {
       if (!file.type.startsWith("image/")) {
@@ -1158,6 +1165,22 @@ function renderCheckoutPage() {
     const line = document.createElement("div");
     line.className = "checkout-product";
 
+    if (item.image_url) {
+      const image = document.createElement("img");
+      image.src = item.image_url;
+      image.alt = item.name;
+      image.className = "checkout-product-image";
+      image.loading = "lazy";
+
+      image.onerror = () => {
+        image.style.display = "none";
+      };
+
+      line.appendChild(image);
+    }
+
+    const details = document.createElement("div");
+
     const name = document.createElement("strong");
     name.textContent = item.name;
 
@@ -1165,11 +1188,13 @@ function renderCheckoutPage() {
     quantity.textContent = "Quantité : " + item.quantity;
 
     const subtotal = document.createElement("p");
-    subtotal.textContent = formatMoney(
-      Number(item.price) * Number(item.quantity)
-    );
+    subtotal.textContent =
+      "Sous-total : " +
+      formatMoney(Number(item.price) * Number(item.quantity));
 
-    line.append(name, quantity, subtotal);
+    details.append(name, quantity, subtotal);
+    line.appendChild(details);
+
     container.appendChild(line);
   });
 
@@ -1178,7 +1203,15 @@ function renderCheckoutPage() {
   );
 }
 
-// Soumission de la commande
+// Validation de l'adresse e-mail
+
+function isValidCustomerEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// ==========================================
+// SOUMISSION DE LA COMMANDE
+// ==========================================
 
 $("#checkoutForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -1189,16 +1222,35 @@ $("#checkoutForm")?.addEventListener("submit", async (event) => {
   if (!button) return;
 
   if (cart.length === 0) {
-    if (message) message.textContent = "Votre panier est vide.";
+    if (message) {
+      message.textContent = "Votre panier est vide.";
+    }
     return;
   }
 
   const customerName = $("#customerName")?.value.trim() || "";
+  const customerEmail = $("#customerEmail")?.value.trim() || "";
   const customerPhone = $("#customerPhone")?.value.trim() || "";
   const customerAddress = $("#customerAddress")?.value.trim() || "";
 
-  if (!customerName || !customerPhone || !customerAddress) {
-    if (message) message.textContent = "Remplis toutes les informations.";
+  if (
+    !customerName ||
+    !customerEmail ||
+    !customerPhone ||
+    !customerAddress
+  ) {
+    if (message) {
+      message.textContent =
+        "Remplis toutes les informations obligatoires.";
+    }
+    return;
+  }
+
+  if (!isValidCustomerEmail(customerEmail)) {
+    if (message) {
+      message.textContent =
+        "Entre une adresse e-mail valide.";
+    }
     return;
   }
 
@@ -1206,16 +1258,18 @@ $("#checkoutForm")?.addEventListener("submit", async (event) => {
   button.textContent = "Enregistrement...";
 
   if (message) {
-    message.textContent = "Enregistrement de ta commande...";
+    message.textContent =
+      "Enregistrement de ta commande...";
   }
 
   try {
+    // Préparer les produits
     const items = cart.map((item) => ({
       product_id: item.id,
       quantity: Number(item.quantity)
     }));
 
-    // Créer la commande dans Supabase
+    // 1. Créer la commande dans Supabase
 
     const { data, error } = await supabaseClient.rpc(
       "create_commercex_order",
@@ -1230,48 +1284,64 @@ $("#checkoutForm")?.addEventListener("submit", async (event) => {
     if (error) throw error;
 
     if (!data) {
-      throw new Error("La commande n'a pas été confirmée.");
+      throw new Error(
+        "La commande n'a pas été confirmée par le serveur."
+      );
     }
 
     const orderId = data;
 
-    // Vider le panier après confirmation de Supabase
+    // 2. Vider le panier après confirmation
 
     cart = [];
     saveCart();
     renderCart();
 
-    // Notification e-mail par fonction sécurisée
+    // 3. Envoyer les e-mails
 
     let emailSent = false;
 
+    if (message) {
+      message.textContent =
+        "Commande enregistrée. Envoi des notifications...";
+    }
+
     try {
-      const { error: emailError } =
+      const { data: emailResult, error: emailError } =
         await supabaseClient.functions.invoke(
           "send-order-email",
           {
             body: {
-              order_id: orderId
+              order_id: orderId,
+              customer_email: customerEmail
             }
           }
         );
 
       if (emailError) throw emailError;
 
+      if (emailResult?.error) {
+        throw new Error(emailResult.error);
+      }
+
       emailSent = true;
+
+      console.log("Résultat des e-mails :", emailResult);
 
     } catch (emailError) {
       console.error("Erreur e-mail :", emailError);
     }
 
-    // Confirmation
+    // 4. Afficher la confirmation
 
     $("#checkoutForm").reset();
 
     if (message) {
       message.textContent = emailSent
-        ? "Commande enregistrée et notification envoyée !"
-        : "Commande enregistrée. Notification e-mail en attente de configuration.";
+        ? "Commande confirmée ! Un e-mail détaillé a été envoyé à " +
+          customerEmail +
+          ". La livraison est prévue dans les prochaines 24 heures."
+        : "Commande enregistrée avec succès. L'envoi de l'e-mail est en attente de vérification.";
     }
 
     toast(
@@ -1281,18 +1351,19 @@ $("#checkoutForm")?.addEventListener("submit", async (event) => {
 
     renderCheckoutPage();
 
-    // Retour à la boutique
+    // 5. Retour à la boutique
 
     setTimeout(() => {
       window.location.href = "index.html";
-    }, 3500);
+    }, 6000);
 
   } catch (error) {
     console.error("Erreur commande :", error);
 
     if (message) {
       message.textContent =
-        error.message || "Impossible d'enregistrer la commande.";
+        error.message ||
+        "Impossible d'enregistrer la commande.";
     }
 
     toast("Impossible d'enregistrer la commande.");
