@@ -244,7 +244,7 @@ $("#productForm").addEventListener("submit", async (event) => {
 
       const { error: uploadError } = await supabaseClient
         .storage
-        .from("product-images")
+        .from("product-image")
         .upload(filePath, file, {
           contentType: file.type,
           upsert: false
