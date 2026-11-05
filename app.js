@@ -1139,11 +1139,10 @@ $("#orderDetailsOverlay")?.addEventListener("click", (event) => {
 });
 
 // ==========================================
-// 12. VALIDATION DE COMMANDE
+// 12. FORMULAIRE ET VALIDATION DE COMMANDE
 // ==========================================
 
-// Le formulaire client sera connecté à Supabase
-// dans la prochaine étape.
+// Ouvrir le formulaire de commande
 
 $("#checkoutButton")?.addEventListener("click", () => {
   if (cart.length === 0) {
@@ -1151,7 +1150,156 @@ $("#checkoutButton")?.addEventListener("click", () => {
     return;
   }
 
-  toast("Préparation du formulaire de commande...");
+  $("#cartOverlay")?.classList.remove("active");
+
+  const overlay = $("#checkoutOverlay");
+
+  if (!overlay) {
+    toast("Le formulaire de commande est introuvable.");
+    return;
+  }
+
+  overlay.hidden = false;
+  overlay.classList.add("active");
+
+  if ($("#checkoutMessage")) {
+    $("#checkoutMessage").textContent = "";
+  }
+});
+
+// Fermer le formulaire
+
+function closeCheckout() {
+  const overlay = $("#checkoutOverlay");
+
+  if (!overlay) return;
+
+  overlay.classList.remove("active");
+  overlay.hidden = true;
+}
+
+$("#cancelCheckoutButton")?.addEventListener(
+  "click",
+  closeCheckout
+);
+
+$("#checkoutOverlay")?.addEventListener("click", (event) => {
+  if (event.target.id === "checkoutOverlay") {
+    closeCheckout();
+  }
+});
+
+// Enregistrer la commande dans Supabase
+
+$("#checkoutForm")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const button = $("#confirmOrderButton");
+  const message = $("#checkoutMessage");
+
+  if (cart.length === 0) {
+    toast("Votre panier est vide.");
+    closeCheckout();
+    return;
+  }
+
+  const customerName = $("#customerName")?.value.trim() || "";
+  const customerPhone = $("#customerPhone")?.value.trim() || "";
+  const customerAddress = $("#customerAddress")?.value.trim() || "";
+
+  if (!customerName || !customerPhone || !customerAddress) {
+    if (message) {
+      message.textContent = "Remplis toutes les informations.";
+    }
+    return;
+  }
+
+  if (!button) return;
+
+  button.disabled = true;
+  button.textContent = "Enregistrement...";
+
+  if (message) {
+    message.textContent = "Envoi de ta commande...";
+  }
+
+  try {
+    // Préparer les produits du panier
+
+    const items = cart.map((item) => ({
+      product_id: item.id,
+      quantity: Number(item.quantity)
+    }));
+
+    // Appeler la fonction sécurisée Supabase
+
+    const { data, error } = await supabaseClient.rpc(
+      "create_commercex_order",
+      {
+        p_customer_name: customerName,
+        p_customer_phone: customerPhone,
+        p_customer_address: customerAddress,
+        p_items: items
+      }
+    );
+
+    if (error) throw error;
+
+    if (!data) {
+      throw new Error("La commande n'a pas été confirmée.");
+    }
+
+    // Vider le panier uniquement après confirmation
+
+    cart = [];
+    saveCart();
+    renderCart();
+
+    // Réinitialiser le formulaire
+
+    $("#checkoutForm").reset();
+
+    if (message) {
+      message.textContent = "Commande enregistrée avec succès !";
+    }
+
+    closeCheckout();
+
+    toast(
+      "Commande confirmée ! Référence : " +
+      String(data).slice(0, 8).toUpperCase()
+    );
+
+    // Actualiser les produits et le stock
+
+    await loadProducts();
+
+    // Actualiser les commandes si l'administration est ouverte
+
+    if ($("#adminDashboard") && !$("#adminDashboard").hidden) {
+      await loadOrders();
+    }
+
+  } catch (error) {
+    console.error("Erreur commande :", error);
+
+    let errorMessage = error.message || "Une erreur est survenue.";
+
+    if (errorMessage.toLowerCase().includes("stock insuffisant")) {
+      errorMessage =
+        "Stock insuffisant pour un ou plusieurs produits.";
+    }
+
+    if (message) {
+      message.textContent = errorMessage;
+    }
+
+    toast("Impossible d'enregistrer la commande.");
+
+  } finally {
+    button.disabled = false;
+    button.textContent = "Confirmer ma commande";
+  }
 });
 
 // ==========================================
@@ -1161,6 +1309,7 @@ $("#checkoutButton")?.addEventListener("click", () => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     $("#cartOverlay")?.classList.remove("active");
+    closeCheckout();
     closeOrderDetails();
   }
 });
