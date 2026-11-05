@@ -124,3 +124,153 @@ $("#notifyButton")?.addEventListener("click", () => {
 
 // Charger le catalogue
 loadProducts();
+const { error: deleteError } = await supabaseClient
+        .from("products")
+        .delete()
+        .eq("id", product.id);
+
+      if (deleteError) {
+        toast("Erreur : suppression impossible.");
+        return;
+      }
+
+      toast("Produit supprimé.");
+      await loadAdminProducts();
+      await loadProducts();
+    });
+
+    item.append(info, editButton, deleteButton);
+    adminProductList.appendChild(item);
+  });
+}
+
+// Annuler une modification
+$("#cancelEditButton")?.addEventListener("click", () => {
+  productForm.reset();
+  $("#productId").value = "";
+  $("#saveProductButton").textContent = "Ajouter le produit";
+  $("#cancelEditButton").hidden = true;
+});
+
+// Ajouter ou modifier un produit
+productForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (!currentAdmin) {
+    toast("Connecte-toi comme administrateur.");
+    return;
+  }
+
+  const saveButton = $("#saveProductButton");
+  saveButton.disabled = true;
+  saveButton.textContent = "Enregistrement...";
+
+  try {
+    const productId = $("#productId").value;
+    const imageFile = $("#productImage").files[0];
+
+    const product = {
+      name: $("#productName").value.trim(),
+      price: Number($("#productPrice").value),
+      category: $("#productCategory").value,
+      stock: Number($("#productStock").value),
+      description: $("#productDescription").value.trim()
+    };
+
+    if (
+      !product.name ||
+      !Number.isFinite(product.price) ||
+      product.price < 0 ||
+      !Number.isInteger(product.stock) ||
+      product.stock < 0
+    ) {
+      throw new Error("Vérifie le nom, le prix et le stock.");
+    }
+
+    // Envoyer la photo dans Supabase Storage
+    if (imageFile) {
+      if (!imageFile.type.startsWith("image/")) {
+        throw new Error("Choisis un fichier image.");
+      }
+
+      if (imageFile.size > 5 * 1024 * 1024) {
+        throw new Error("La photo ne doit pas dépasser 5 Mo.");
+      }
+
+      const extension =
+        imageFile.name.split(".").pop().toLowerCase();
+
+      const filePath =
+        Date.now() + "-" + crypto.randomUUID() + "." + extension;
+
+      const { error: uploadError } = await supabaseClient
+        .storage
+        .from("product-images")
+        .upload(filePath, imageFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: imageData } = supabaseClient
+        .storage
+        .from("product-images")
+        .getPublicUrl(filePath);
+
+      product.image_url = imageData.publicUrl;
+    }
+
+    // Modifier un produit existant
+    if (productId) {
+      const { error } = await supabaseClient
+        .from("products")
+        .update(product)
+        .eq("id", productId);
+
+      if (error) throw error;
+
+      toast("Produit modifié avec succès.");
+    } else {
+      // Ajouter un nouveau produit
+      const { error } = await supabaseClient
+        .from("products")
+        .insert(product);
+
+      if (error) throw error;
+
+      toast("Produit ajouté avec succès.");
+    }
+
+    productForm.reset();
+    $("#productId").value = "";
+    saveButton.textContent = "Ajouter le produit";
+    $("#cancelEditButton").hidden = true;
+
+    await loadAdminProducts();
+    await loadProducts();
+
+  } catch (error) {
+    console.error(error);
+    toast(error.message || "Une erreur est survenue.");
+  } finally {
+    saveButton.disabled = false;
+
+    if (!$("#productId").value) {
+      saveButton.textContent = "Ajouter le produit";
+    } else {
+      saveButton.textContent = "Enregistrer les modifications";
+    }
+  }
+});
+
+// Vérifier la session au chargement du site
+async function initializeAdmin() {
+  const { data } = await supabaseClient.auth.getSession();
+  await checkAdmin(data.session);
+}
+
+initializeAdmin();
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+    checkAdmin(session);
+  }
+});
