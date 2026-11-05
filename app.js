@@ -2,7 +2,7 @@
 /* ==========================================
    COMMERCEX - APPLICATION JAVASCRIPT
    Supabase + Administration + Catalogue
-   Panier + Gestion des commandes
+   Panier + Commandes + Checkout indépendant
 ========================================== */
 
 // ==========================================
@@ -259,25 +259,37 @@ function renderCart() {
   }
 }
 
-// Ouverture du panier
+// Ouvrir le panier
 
 $("#cartButton")?.addEventListener("click", () => {
   $("#cartOverlay")?.classList.add("active");
   renderCart();
 });
 
-// Fermeture du panier
+// Fermer le panier
 
 $("#closeCartButton")?.addEventListener("click", () => {
   $("#cartOverlay")?.classList.remove("active");
 });
 
-// Fermeture en cliquant à l'extérieur
+// Fermer en cliquant à l'extérieur
 
 $("#cartOverlay")?.addEventListener("click", (event) => {
   if (event.target.id === "cartOverlay") {
     $("#cartOverlay").classList.remove("active");
   }
+});
+
+// Aller vers la nouvelle page de commande
+
+$("#checkoutButton")?.addEventListener("click", () => {
+  if (cart.length === 0) {
+    toast("Votre panier est vide.");
+    return;
+  }
+
+  saveCart();
+  window.location.href = "checkout.html";
 });
 
 // ==========================================
@@ -400,18 +412,21 @@ async function checkAdmin(user) {
     if (!data) {
       await supabaseClient.auth.signOut();
 
-      $("#adminLogin").hidden = false;
-      $("#adminDashboard").hidden = true;
+      if ($("#adminLogin")) $("#adminLogin").hidden = false;
+      if ($("#adminDashboard")) $("#adminDashboard").hidden = true;
 
-      $("#loginMessage").textContent =
-        "Ce compte n'a pas les droits administrateur.";
+      if ($("#loginMessage")) {
+        $("#loginMessage").textContent =
+          "Ce compte n'a pas les droits administrateur.";
+      }
 
       return false;
     }
 
-    $("#adminLogin").hidden = true;
-    $("#adminDashboard").hidden = false;
-    $("#loginMessage").textContent = "";
+    if ($("#adminLogin")) $("#adminLogin").hidden = true;
+    if ($("#adminDashboard")) $("#adminDashboard").hidden = false;
+
+    if ($("#loginMessage")) $("#loginMessage").textContent = "";
 
     await loadProducts();
     await loadOrders();
@@ -421,11 +436,13 @@ async function checkAdmin(user) {
   } catch (error) {
     console.error("Erreur vérification admin :", error);
 
-    $("#adminLogin").hidden = false;
-    $("#adminDashboard").hidden = true;
+    if ($("#adminLogin")) $("#adminLogin").hidden = false;
+    if ($("#adminDashboard")) $("#adminDashboard").hidden = true;
 
-    $("#loginMessage").textContent =
-      "Impossible de vérifier les droits administrateur.";
+    if ($("#loginMessage")) {
+      $("#loginMessage").textContent =
+        "Impossible de vérifier les droits administrateur.";
+    }
 
     return false;
   }
@@ -492,10 +509,10 @@ $("#logoutButton")?.addEventListener("click", async () => {
     return;
   }
 
-  $("#adminLogin").hidden = false;
-  $("#adminDashboard").hidden = true;
-  $("#adminPassword").value = "";
-  $("#loginMessage").textContent = "";
+  if ($("#adminLogin")) $("#adminLogin").hidden = false;
+  if ($("#adminDashboard")) $("#adminDashboard").hidden = true;
+  if ($("#adminPassword")) $("#adminPassword").value = "";
+  if ($("#loginMessage")) $("#loginMessage").textContent = "";
 
   toast("Déconnexion réussie.");
 });
@@ -585,7 +602,7 @@ $("#productForm")?.addEventListener("submit", async (event) => {
   } finally {
     button.disabled = false;
 
-    button.textContent = $("#productId").value
+    button.textContent = $("#productId")?.value
       ? "Enregistrer les modifications"
       : "Ajouter le produit";
   }
@@ -727,7 +744,7 @@ async function deleteProduct(product) {
 }
 
 // ==========================================
-// 11. GESTION DES COMMANDES
+// 11. GESTION DES COMMANDES ADMIN
 // ==========================================
 
 let cachedOrders = [];
@@ -739,8 +756,6 @@ const ORDER_STATUSES = [
   "Livrée",
   "Annulée"
 ];
-
-// Charger les commandes depuis Supabase
 
 async function loadOrders() {
   const list = $("#adminOrdersList");
@@ -805,8 +820,6 @@ async function loadOrders() {
   }
 }
 
-// Actualiser les statistiques
-
 function updateOrderStats(orders) {
   const totalOrders = orders.length;
 
@@ -838,8 +851,6 @@ function updateOrderStats(orders) {
     $("#ordersRevenue").textContent = formatMoney(revenue);
   }
 }
-
-// Afficher les commandes
 
 function renderOrders() {
   const list = $("#adminOrdersList");
@@ -915,10 +926,6 @@ function renderOrders() {
 
     const statusSelect = document.createElement("select");
     statusSelect.className = "order-status-select";
-    statusSelect.setAttribute(
-      "aria-label",
-      "Modifier le statut de la commande"
-    );
 
     ORDER_STATUSES.forEach((status) => {
       const option = document.createElement("option");
@@ -960,8 +967,6 @@ function renderOrders() {
   });
 }
 
-// Modifier le statut d'une commande
-
 async function updateOrderStatus(orderId, newStatus, selectElement) {
   if (!ORDER_STATUSES.includes(newStatus)) {
     toast("Statut de commande invalide.");
@@ -969,9 +974,7 @@ async function updateOrderStatus(orderId, newStatus, selectElement) {
     return;
   }
 
-  if (selectElement) {
-    selectElement.disabled = true;
-  }
+  if (selectElement) selectElement.disabled = true;
 
   try {
     const { error } = await supabaseClient
@@ -993,13 +996,9 @@ async function updateOrderStatus(orderId, newStatus, selectElement) {
     await loadOrders();
 
   } finally {
-    if (selectElement) {
-      selectElement.disabled = false;
-    }
+    if (selectElement) selectElement.disabled = false;
   }
 }
-
-// Afficher les détails d'une commande
 
 function showOrderDetails(order) {
   const overlay = $("#orderDetailsOverlay");
@@ -1023,16 +1022,13 @@ function showOrderDetails(order) {
   customerTitle.textContent = "Informations du client";
 
   const customerName = document.createElement("p");
-  customerName.textContent =
-    "Nom : " + order.customer_name;
+  customerName.textContent = "Nom : " + order.customer_name;
 
   const customerPhone = document.createElement("p");
-  customerPhone.textContent =
-    "Téléphone : " + order.customer_phone;
+  customerPhone.textContent = "Téléphone : " + order.customer_phone;
 
   const customerAddress = document.createElement("p");
-  customerAddress.textContent =
-    "Adresse : " + order.customer_address;
+  customerAddress.textContent = "Adresse : " + order.customer_address;
 
   const payment = document.createElement("p");
   payment.textContent =
@@ -1060,8 +1056,7 @@ function showOrderDetails(order) {
       productName.textContent = item.product_name;
 
       const productQuantity = document.createElement("p");
-      productQuantity.textContent =
-        "Quantité : " + item.quantity;
+      productQuantity.textContent = "Quantité : " + item.quantity;
 
       const productPrice = document.createElement("p");
       productPrice.textContent =
@@ -1104,19 +1099,13 @@ function showOrderDetails(order) {
   overlay.classList.add("active");
 }
 
-// Actualiser les commandes
-
 $("#refreshOrdersButton")?.addEventListener("click", () => {
   loadOrders();
 });
 
-// Filtrer les commandes
-
 $("#orderStatusFilter")?.addEventListener("change", () => {
   renderOrders();
 });
-
-// Fermer la fenêtre des détails
 
 function closeOrderDetails() {
   const overlay = $("#orderDetailsOverlay");
@@ -1139,57 +1128,57 @@ $("#orderDetailsOverlay")?.addEventListener("click", (event) => {
 });
 
 // ==========================================
-// 12. FORMULAIRE ET VALIDATION DE COMMANDE
+// 12. PAGE INDÉPENDANTE CHECKOUT.HTML
 // ==========================================
 
-// Ouvrir le formulaire de commande
-
-$("#checkoutButton")?.addEventListener("click", () => {
-  if (cart.length === 0) {
-    toast("Votre panier est vide.");
-    return;
-  }
-
-  $("#cartOverlay")?.classList.remove("active");
-
-  const overlay = $("#checkoutOverlay");
-
-  if (!overlay) {
-    toast("Le formulaire de commande est introuvable.");
-    return;
-  }
-
-  overlay.hidden = false;
-  overlay.classList.add("active");
-
-  if ($("#checkoutMessage")) {
-    $("#checkoutMessage").textContent = "";
-  }
-});
-
-// Fermer le formulaire
-
-function closeCheckout() {
-  const overlay = $("#checkoutOverlay");
-
-  if (!overlay) return;
-
-  overlay.classList.remove("active");
-  overlay.hidden = true;
+function calculateCheckoutTotal() {
+  return cart.reduce((total, item) => {
+    return total + Number(item.price) * Number(item.quantity);
+  }, 0);
 }
 
-$("#cancelCheckoutButton")?.addEventListener(
-  "click",
-  closeCheckout
-);
+function renderCheckoutPage() {
+  const container = $("#checkoutItems");
+  const totalElement = $("#checkoutTotal");
 
-$("#checkoutOverlay")?.addEventListener("click", (event) => {
-  if (event.target.id === "checkoutOverlay") {
-    closeCheckout();
+  if (!container || !totalElement) return;
+
+  container.replaceChildren();
+
+  if (cart.length === 0) {
+    const message = document.createElement("p");
+    message.textContent = "Votre panier est vide.";
+    container.appendChild(message);
+
+    totalElement.textContent = formatMoney(0);
+    return;
   }
-});
 
-// Enregistrer la commande dans Supabase
+  cart.forEach((item) => {
+    const line = document.createElement("div");
+    line.className = "checkout-product";
+
+    const name = document.createElement("strong");
+    name.textContent = item.name;
+
+    const quantity = document.createElement("p");
+    quantity.textContent = "Quantité : " + item.quantity;
+
+    const subtotal = document.createElement("p");
+    subtotal.textContent = formatMoney(
+      Number(item.price) * Number(item.quantity)
+    );
+
+    line.append(name, quantity, subtotal);
+    container.appendChild(line);
+  });
+
+  totalElement.textContent = formatMoney(
+    calculateCheckoutTotal()
+  );
+}
+
+// Soumission de la commande
 
 $("#checkoutForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -1197,9 +1186,10 @@ $("#checkoutForm")?.addEventListener("submit", async (event) => {
   const button = $("#confirmOrderButton");
   const message = $("#checkoutMessage");
 
+  if (!button) return;
+
   if (cart.length === 0) {
-    toast("Votre panier est vide.");
-    closeCheckout();
+    if (message) message.textContent = "Votre panier est vide.";
     return;
   }
 
@@ -1208,30 +1198,24 @@ $("#checkoutForm")?.addEventListener("submit", async (event) => {
   const customerAddress = $("#customerAddress")?.value.trim() || "";
 
   if (!customerName || !customerPhone || !customerAddress) {
-    if (message) {
-      message.textContent = "Remplis toutes les informations.";
-    }
+    if (message) message.textContent = "Remplis toutes les informations.";
     return;
   }
-
-  if (!button) return;
 
   button.disabled = true;
   button.textContent = "Enregistrement...";
 
   if (message) {
-    message.textContent = "Envoi de ta commande...";
+    message.textContent = "Enregistrement de ta commande...";
   }
 
   try {
-    // Préparer les produits du panier
-
     const items = cart.map((item) => ({
       product_id: item.id,
       quantity: Number(item.quantity)
     }));
 
-    // Appeler la fonction sécurisée Supabase
+    // Créer la commande dans Supabase
 
     const { data, error } = await supabaseClient.rpc(
       "create_commercex_order",
@@ -1249,49 +1233,66 @@ $("#checkoutForm")?.addEventListener("submit", async (event) => {
       throw new Error("La commande n'a pas été confirmée.");
     }
 
-    // Vider le panier uniquement après confirmation
+    const orderId = data;
+
+    // Vider le panier après confirmation de Supabase
 
     cart = [];
     saveCart();
     renderCart();
 
-    // Réinitialiser le formulaire
+    // Notification e-mail par fonction sécurisée
+
+    let emailSent = false;
+
+    try {
+      const { error: emailError } =
+        await supabaseClient.functions.invoke(
+          "send-order-email",
+          {
+            body: {
+              order_id: orderId
+            }
+          }
+        );
+
+      if (emailError) throw emailError;
+
+      emailSent = true;
+
+    } catch (emailError) {
+      console.error("Erreur e-mail :", emailError);
+    }
+
+    // Confirmation
 
     $("#checkoutForm").reset();
 
     if (message) {
-      message.textContent = "Commande enregistrée avec succès !";
+      message.textContent = emailSent
+        ? "Commande enregistrée et notification envoyée !"
+        : "Commande enregistrée. Notification e-mail en attente de configuration.";
     }
-
-    closeCheckout();
 
     toast(
       "Commande confirmée ! Référence : " +
-      String(data).slice(0, 8).toUpperCase()
+      String(orderId).slice(0, 8).toUpperCase()
     );
 
-    // Actualiser les produits et le stock
+    renderCheckoutPage();
 
-    await loadProducts();
+    // Retour à la boutique
 
-    // Actualiser les commandes si l'administration est ouverte
-
-    if ($("#adminDashboard") && !$("#adminDashboard").hidden) {
-      await loadOrders();
-    }
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 3500);
 
   } catch (error) {
     console.error("Erreur commande :", error);
 
-    let errorMessage = error.message || "Une erreur est survenue.";
-
-    if (errorMessage.toLowerCase().includes("stock insuffisant")) {
-      errorMessage =
-        "Stock insuffisant pour un ou plusieurs produits.";
-    }
-
     if (message) {
-      message.textContent = errorMessage;
+      message.textContent =
+        error.message || "Impossible d'enregistrer la commande.";
     }
 
     toast("Impossible d'enregistrer la commande.");
@@ -1302,14 +1303,17 @@ $("#checkoutForm")?.addEventListener("submit", async (event) => {
   }
 });
 
+// Afficher les articles de la page checkout
+
+renderCheckoutPage();
+
 // ==========================================
-// 13. FERMETURE AVEC LA TOUCHE ÉCHAP
+// 13. FERMETURE AVEC ÉCHAP
 // ==========================================
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     $("#cartOverlay")?.classList.remove("active");
-    closeCheckout();
     closeOrderDetails();
   }
 });
