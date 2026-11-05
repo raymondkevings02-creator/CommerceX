@@ -44,9 +44,26 @@ $("#searchToggle").addEventListener("click", () => {
   toast("La recherche sera bientôt disponible.");
 });
 
+// Ouvrir le panier
 $("#cartButton").addEventListener("click", () => {
-  toast("Le panier sera activé prochainement.");
+  $("#cartOverlay").classList.add("active");
+  renderCart();
 });
+
+// Fermer le panier
+$("#closeCartButton").addEventListener("click", () => {
+  $("#cartOverlay").classList.remove("active");
+});
+
+// Fermer en cliquant sur l'extérieur
+$("#cartOverlay").addEventListener("click", (event) => {
+  if (event.target.id === "cartOverlay") {
+    $("#cartOverlay").classList.remove("active");
+  }
+});
+
+// Afficher le panier au chargement
+renderCart();
 
 $("#notifyButton")?.addEventListener("click", () => {
   toast("Merci de votre intérêt pour CommerceX !");
