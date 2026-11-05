@@ -148,7 +148,7 @@ async function checkAdmin(user) {
 
     return false;
   }
-[04/11/2026 22:56] Raymond Kevings: $("#adminLogin").hidden = true;
+  $("#adminLogin").hidden = true;
   $("#adminDashboard").hidden = false;
   $("#loginMessage").textContent = "";
 
