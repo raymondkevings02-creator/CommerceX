@@ -80,6 +80,90 @@
     </button>
   </div>
 </section>
+    <!-- ESPACE ADMINISTRATEUR COMMERCEX -->
+<section class="admin-section" id="administration">
+  <div class="admin-heading">
+    <div class="eyebrow">GESTION DE LA BOUTIQUE</div>
+    <h2>Espace administrateur</h2>
+    <p>Connecte-toi pour gérer les produits de CommerceX.</p>
+  </div>
+
+  <div class="admin-login" id="adminLogin">
+    <h3>Connexion administrateur</h3>
+
+    <form id="loginForm">
+      <label for="adminEmail">Adresse e-mail</label>
+      <input
+        type="email"
+        id="adminEmail"
+        placeholder="Ton adresse e-mail"
+        required
+      >
+
+      <label for="adminPassword">Mot de passe</label>
+      <input
+        type="password"
+        id="adminPassword"
+        placeholder="Ton mot de passe"
+        required
+      >
+
+      <button type="submit" class="primary-button">
+        Se connecter
+      </button>
+    </form>
+
+    <p id="loginMessage" role="status"></p>
+  </div>
+
+  <div class="admin-dashboard" id="adminDashboard" hidden>
+    <div class="admin-top">
+      <h3>Gestion des produits</h3>
+      <button id="logoutButton" class="outline-button">
+        Déconnexion
+      </button>
+    </div>
+
+    <form id="productForm">
+      <input type="hidden" id="productId">
+
+      <label for="productName">Nom du produit</label>
+      <input id="productName" type="text" required>
+
+      <label for="productPrice">Prix en HTG</label>
+      <input id="productPrice" type="number" min="0" step="0.01" required>
+
+      <label for="productCategory">Catégorie</label>
+      <select id="productCategory" required>
+        <option value="">Choisir une catégorie</option>
+        <option value="Mode & accessoires">Mode & accessoires</option>
+        <option value="Maison & quotidien">Maison & quotidien</option>
+        <option value="Tech & gadgets">Tech & gadgets</option>
+        <option value="Autres">Autres</option>
+      </select>
+
+      <label for="productStock">Quantité en stock</label>
+      <input id="productStock" type="number" min="0" step="1" required>
+
+      <label for="productDescription">Description</label>
+      <textarea id="productDescription" rows="4"></textarea>
+
+      <label for="productImage">Photo du produit</label>
+      <input id="productImage" type="file" accept="image/*">
+
+      <button type="submit" class="primary-button" id="saveProductButton">
+        Ajouter le produit
+      </button>
+
+      <button type="button" class="outline-button" id="cancelEditButton" hidden>
+        Annuler la modification
+      </button>
+    </form>
+
+    <h3>Produits enregistrés</h3>
+    <div id="adminProductList"></div>
+  </div>
+</section>
     <section class="about-band" id="apropos"><div><div class="eyebrow">BIENVENUE DANS L'UNIVERS COMMERCEX</div><h2>Le bon choix,<br><span>en toute simplicité.</span></h2></div><p>CommerceX a pour ambition de rendre le shopping en ligne plus agréable. Parcourez, choisissez et commandez depuis votre téléphone ou votre ordinateur.</p></section>
   </main>
 
