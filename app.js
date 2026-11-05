@@ -1,7 +1,8 @@
 
 /* ==========================================
    COMMERCEX - APPLICATION JAVASCRIPT
-   Supabase + Administration + Catalogue + Panier
+   Supabase + Administration + Catalogue
+   Panier + Gestion des commandes
 ========================================== */
 
 // ==========================================
@@ -34,6 +35,22 @@ const toast = (message) => {
 
 if ($("#year")) {
   $("#year").textContent = new Date().getFullYear();
+}
+
+function formatMoney(amount) {
+  return Number(amount || 0).toLocaleString("fr-FR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }) + " HTG";
+}
+
+function formatDate(date) {
+  if (!date) return "Date inconnue";
+
+  return new Date(date).toLocaleString("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
 }
 
 // ==========================================
@@ -177,8 +194,7 @@ function renderCart() {
     name.textContent = item.name;
 
     const price = document.createElement("p");
-    price.textContent =
-      Number(item.price).toLocaleString("fr-FR") + " HTG";
+    price.textContent = formatMoney(item.price);
 
     const quantityControls = document.createElement("div");
     quantityControls.className = "quantity-controls";
@@ -209,8 +225,7 @@ function renderCart() {
     const subtotal = document.createElement("p");
     subtotal.textContent =
       "Sous-total : " +
-      (item.price * item.quantity).toLocaleString("fr-FR") +
-      " HTG";
+      formatMoney(item.price * item.quantity);
 
     const remove = document.createElement("button");
     remove.type = "button";
@@ -235,12 +250,7 @@ function renderCart() {
   });
 
   countElement.textContent = count;
-
-  totalElement.textContent =
-    total.toLocaleString("fr-FR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }) + " HTG";
+  totalElement.textContent = formatMoney(total);
 
   const checkoutButton = $("#checkoutButton");
 
@@ -269,18 +279,6 @@ $("#cartOverlay")?.addEventListener("click", (event) => {
     $("#cartOverlay").classList.remove("active");
   }
 });
-
-// Fermeture avec la touche Échap
-
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    $("#cartOverlay")?.classList.remove("active");
-  }
-});
-
-// Première actualisation du panier
-
-renderCart();
 
 // ==========================================
 // 4. AFFICHAGE DES PRODUITS
@@ -340,8 +338,7 @@ async function loadProducts() {
 
       const price = document.createElement("strong");
       price.className = "product-price";
-      price.textContent =
-        Number(product.price).toLocaleString("fr-FR") + " HTG";
+      price.textContent = formatMoney(product.price);
 
       const stock = document.createElement("small");
       stock.textContent = Number(product.stock) > 0
@@ -417,6 +414,7 @@ async function checkAdmin(user) {
     $("#loginMessage").textContent = "";
 
     await loadProducts();
+    await loadOrders();
 
     return true;
 
@@ -528,8 +526,6 @@ $("#productForm")?.addEventListener("submit", async (event) => {
 
     const file = $("#productImage").files[0];
 
-    // Vérifier et envoyer la photo
-
     if (file) {
       if (!file.type.startsWith("image/")) {
         throw new Error("Le fichier doit être une image.");
@@ -628,8 +624,8 @@ function renderAdminProducts(products) {
     const details = document.createElement("small");
 
     details.textContent =
-      Number(product.price).toLocaleString("fr-FR") +
-      " HTG · Stock : " + product.stock;
+      formatMoney(product.price) +
+      " · Stock : " + product.stock;
 
     info.append(name, details);
 
@@ -731,11 +727,423 @@ async function deleteProduct(product) {
 }
 
 // ==========================================
-// 11. VALIDATION DE COMMANDE
+// 11. GESTION DES COMMANDES
 // ==========================================
 
-// Le bouton sera connecté au formulaire de commande
-// après la création de la table des commandes dans Supabase.
+let cachedOrders = [];
+
+const ORDER_STATUSES = [
+  "En attente",
+  "Confirmée",
+  "Expédiée",
+  "Livrée",
+  "Annulée"
+];
+
+// Charger les commandes depuis Supabase
+
+async function loadOrders() {
+  const list = $("#adminOrdersList");
+  const message = $("#ordersMessage");
+
+  if (!list) return;
+
+  if (message) {
+    message.textContent = "Chargement des commandes...";
+  }
+
+  try {
+    const { data: orders, error } = await supabaseClient
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    const orderList = orders || [];
+    const orderIds = orderList.map((order) => order.id);
+
+    let orderItems = [];
+
+    if (orderIds.length > 0) {
+      const { data: items, error: itemsError } =
+        await supabaseClient
+          .from("order_items")
+          .select("*")
+          .in("order_id", orderIds);
+
+      if (itemsError) throw itemsError;
+
+      orderItems = items || [];
+    }
+
+    cachedOrders = orderList.map((order) => ({
+      ...order,
+      order_items: orderItems.filter(
+        (item) => item.order_id === order.id
+      )
+    }));
+
+    updateOrderStats(cachedOrders);
+    renderOrders();
+
+    if (message) {
+      message.textContent = cachedOrders.length
+        ? cachedOrders.length + " commande(s) trouvée(s)."
+        : "Aucune commande pour le moment.";
+    }
+
+  } catch (error) {
+    console.error("Erreur chargement commandes :", error);
+
+    if (message) {
+      message.textContent =
+        "Impossible de charger les commandes. Vérifie les autorisations Supabase.";
+    }
+
+    toast("Erreur lors du chargement des commandes.");
+  }
+}
+
+// Actualiser les statistiques
+
+function updateOrderStats(orders) {
+  const totalOrders = orders.length;
+
+  const pendingOrders = orders.filter(
+    (order) => order.status === "En attente"
+  ).length;
+
+  const deliveredOrders = orders.filter(
+    (order) => order.status === "Livrée"
+  ).length;
+
+  const revenue = orders
+    .filter((order) => order.status !== "Annulée")
+    .reduce((sum, order) => sum + Number(order.total || 0), 0);
+
+  if ($("#totalOrdersCount")) {
+    $("#totalOrdersCount").textContent = totalOrders;
+  }
+
+  if ($("#pendingOrdersCount")) {
+    $("#pendingOrdersCount").textContent = pendingOrders;
+  }
+
+  if ($("#deliveredOrdersCount")) {
+    $("#deliveredOrdersCount").textContent = deliveredOrders;
+  }
+
+  if ($("#ordersRevenue")) {
+    $("#ordersRevenue").textContent = formatMoney(revenue);
+  }
+}
+
+// Afficher les commandes
+
+function renderOrders() {
+  const list = $("#adminOrdersList");
+
+  if (!list) return;
+
+  list.replaceChildren();
+
+  const filter = $("#orderStatusFilter")?.value || "Toutes";
+
+  const filteredOrders = cachedOrders.filter((order) => {
+    return filter === "Toutes" || filter === ""
+      ? true
+      : order.status === filter;
+  });
+
+  if (filteredOrders.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "orders-empty";
+    empty.textContent = cachedOrders.length === 0
+      ? "Aucune commande reçue pour le moment."
+      : "Aucune commande ne correspond à ce filtre.";
+
+    list.appendChild(empty);
+    return;
+  }
+
+  filteredOrders.forEach((order) => {
+    const card = document.createElement("article");
+    card.className = "order-card";
+
+    const header = document.createElement("div");
+    header.className = "order-card-header";
+
+    const orderNumber = document.createElement("strong");
+    orderNumber.textContent =
+      "#" + order.id.slice(0, 8).toUpperCase();
+
+    const date = document.createElement("small");
+    date.textContent = formatDate(order.created_at);
+
+    header.append(orderNumber, date);
+
+    const customer = document.createElement("div");
+    customer.className = "order-customer-info";
+
+    const customerName = document.createElement("strong");
+    customerName.textContent = order.customer_name;
+
+    const phone = document.createElement("p");
+    phone.textContent = "Téléphone : " + order.customer_phone;
+
+    const address = document.createElement("p");
+    address.textContent = "Adresse : " + order.customer_address;
+
+    customer.append(customerName, phone, address);
+
+    const itemCount = document.createElement("p");
+    const quantity = (order.order_items || []).reduce(
+      (sum, item) => sum + Number(item.quantity || 0),
+      0
+    );
+
+    itemCount.textContent =
+      quantity + " article(s) dans cette commande";
+
+    const total = document.createElement("strong");
+    total.className = "order-total";
+    total.textContent = "Total : " + formatMoney(order.total);
+
+    const actions = document.createElement("div");
+    actions.className = "order-card-actions";
+
+    const statusSelect = document.createElement("select");
+    statusSelect.className = "order-status-select";
+    statusSelect.setAttribute(
+      "aria-label",
+      "Modifier le statut de la commande"
+    );
+
+    ORDER_STATUSES.forEach((status) => {
+      const option = document.createElement("option");
+      option.value = status;
+      option.textContent = status;
+      statusSelect.appendChild(option);
+    });
+
+    statusSelect.value = order.status;
+
+    statusSelect.addEventListener("change", async () => {
+      await updateOrderStatus(
+        order.id,
+        statusSelect.value,
+        statusSelect
+      );
+    });
+
+    const detailsButton = document.createElement("button");
+    detailsButton.type = "button";
+    detailsButton.className = "outline-button";
+    detailsButton.textContent = "Voir les détails";
+
+    detailsButton.addEventListener("click", () => {
+      showOrderDetails(order);
+    });
+
+    actions.append(statusSelect, detailsButton);
+
+    card.append(
+      header,
+      customer,
+      itemCount,
+      total,
+      actions
+    );
+
+    list.appendChild(card);
+  });
+}
+
+// Modifier le statut d'une commande
+
+async function updateOrderStatus(orderId, newStatus, selectElement) {
+  if (!ORDER_STATUSES.includes(newStatus)) {
+    toast("Statut de commande invalide.");
+    await loadOrders();
+    return;
+  }
+
+  if (selectElement) {
+    selectElement.disabled = true;
+  }
+
+  try {
+    const { error } = await supabaseClient
+      .from("orders")
+      .update({ status: newStatus })
+      .eq("id", orderId);
+
+    if (error) throw error;
+
+    toast("Statut de la commande mis à jour.");
+
+    await loadOrders();
+
+  } catch (error) {
+    console.error("Erreur modification statut :", error);
+
+    toast("Impossible de modifier le statut.");
+
+    await loadOrders();
+
+  } finally {
+    if (selectElement) {
+      selectElement.disabled = false;
+    }
+  }
+}
+
+// Afficher les détails d'une commande
+
+function showOrderDetails(order) {
+  const overlay = $("#orderDetailsOverlay");
+  const content = $("#orderDetailsContent");
+
+  if (!overlay || !content) {
+    toast("La fenêtre des détails est introuvable dans le HTML.");
+    return;
+  }
+
+  content.replaceChildren();
+
+  const title = document.createElement("h3");
+  title.textContent =
+    "Commande #" + order.id.slice(0, 8).toUpperCase();
+
+  const date = document.createElement("p");
+  date.textContent = "Date : " + formatDate(order.created_at);
+
+  const customerTitle = document.createElement("h4");
+  customerTitle.textContent = "Informations du client";
+
+  const customerName = document.createElement("p");
+  customerName.textContent =
+    "Nom : " + order.customer_name;
+
+  const customerPhone = document.createElement("p");
+  customerPhone.textContent =
+    "Téléphone : " + order.customer_phone;
+
+  const customerAddress = document.createElement("p");
+  customerAddress.textContent =
+    "Adresse : " + order.customer_address;
+
+  const payment = document.createElement("p");
+  payment.textContent =
+    "Paiement : " + (order.payment_method || "Paiement à la livraison");
+
+  const status = document.createElement("p");
+  status.textContent = "Statut : " + order.status;
+
+  const productsTitle = document.createElement("h4");
+  productsTitle.textContent = "Produits commandés";
+
+  const productsList = document.createElement("div");
+  productsList.className = "order-details-products";
+
+  if (!order.order_items || order.order_items.length === 0) {
+    const empty = document.createElement("p");
+    empty.textContent = "Aucun article trouvé.";
+    productsList.appendChild(empty);
+  } else {
+    order.order_items.forEach((item) => {
+      const productLine = document.createElement("div");
+      productLine.className = "order-detail-item";
+
+      const productName = document.createElement("strong");
+      productName.textContent = item.product_name;
+
+      const productQuantity = document.createElement("p");
+      productQuantity.textContent =
+        "Quantité : " + item.quantity;
+
+      const productPrice = document.createElement("p");
+      productPrice.textContent =
+        "Prix unitaire : " + formatMoney(item.unit_price);
+
+      const productSubtotal = document.createElement("p");
+      productSubtotal.textContent =
+        "Sous-total : " + formatMoney(item.subtotal);
+
+      productLine.append(
+        productName,
+        productQuantity,
+        productPrice,
+        productSubtotal
+      );
+
+      productsList.appendChild(productLine);
+    });
+  }
+
+  const total = document.createElement("h3");
+  total.className = "order-details-total";
+  total.textContent = "Total : " + formatMoney(order.total);
+
+  content.append(
+    title,
+    date,
+    customerTitle,
+    customerName,
+    customerPhone,
+    customerAddress,
+    payment,
+    status,
+    productsTitle,
+    productsList,
+    total
+  );
+
+  overlay.hidden = false;
+  overlay.classList.add("active");
+}
+
+// Actualiser les commandes
+
+$("#refreshOrdersButton")?.addEventListener("click", () => {
+  loadOrders();
+});
+
+// Filtrer les commandes
+
+$("#orderStatusFilter")?.addEventListener("change", () => {
+  renderOrders();
+});
+
+// Fermer la fenêtre des détails
+
+function closeOrderDetails() {
+  const overlay = $("#orderDetailsOverlay");
+
+  if (!overlay) return;
+
+  overlay.classList.remove("active");
+  overlay.hidden = true;
+}
+
+$("#closeOrderDetailsButton")?.addEventListener(
+  "click",
+  closeOrderDetails
+);
+
+$("#orderDetailsOverlay")?.addEventListener("click", (event) => {
+  if (event.target.id === "orderDetailsOverlay") {
+    closeOrderDetails();
+  }
+});
+
+// ==========================================
+// 12. VALIDATION DE COMMANDE
+// ==========================================
+
+// Le formulaire client sera connecté à Supabase
+// dans la prochaine étape.
 
 $("#checkoutButton")?.addEventListener("click", () => {
   if (cart.length === 0) {
@@ -747,7 +1155,18 @@ $("#checkoutButton")?.addEventListener("click", () => {
 });
 
 // ==========================================
-// 12. DÉMARRAGE DE L'APPLICATION
+// 13. FERMETURE AVEC LA TOUCHE ÉCHAP
+// ==========================================
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    $("#cartOverlay")?.classList.remove("active");
+    closeOrderDetails();
+  }
+});
+
+// ==========================================
+// 14. DÉMARRAGE DE L'APPLICATION
 // ==========================================
 
 renderCart();
