@@ -107,3 +107,150 @@ h1,h2,h3,p{margin-top:0}h1{font:600 clamp(42px,5.4vw,72px)/1.04 var(--display);l
     height: 250px;
   }
 }
+/* ==================================
+   COMMERCEX - ESPACE ADMINISTRATEUR
+================================== */
+
+.admin-section {
+  padding: 90px 7%;
+  background: linear-gradient(180deg, #090d1b, #10182b);
+  border-top: 1px solid var(--line);
+}
+
+.admin-heading {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.admin-heading h2 {
+  font: 700 32px var(--display);
+  margin: 12px 0;
+}
+
+.admin-heading p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.admin-login,
+.admin-dashboard {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(21, 30, 53, .8);
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+
+.admin-login {
+  max-width: 460px;
+}
+
+.admin-login h3,
+.admin-dashboard h3 {
+  font: 600 21px var(--display);
+  margin-bottom: 22px;
+}
+
+.admin-section label {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin: 17px 0 8px;
+}
+
+.admin-section input,
+.admin-section select,
+.admin-section textarea {
+  width: 100%;
+  padding: 13px 15px;
+  color: var(--text);
+  background: #090f20;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  outline: none;
+  font: inherit;
+}
+
+.admin-section input:focus,
+.admin-section select:focus,
+.admin-section textarea:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(98,230,237,.08);
+}
+
+.admin-section input[type="file"] {
+  padding: 10px;
+}
+
+.admin-section button {
+  margin-top: 18px;
+}
+
+.admin-section [hidden] {
+  display: none !important;
+}
+
+.admin-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+#loginMessage {
+  color: var(--cyan);
+  font-size: 13px;
+  margin-top: 15px;
+}
+
+#adminProductList {
+  margin-top: 20px;
+}
+
+.admin-product-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-product-item strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.admin-product-item small {
+  color: var(--muted);
+}
+
+.admin-product-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-product-actions button {
+  margin: 0;
+}
+
+@media(max-width:600px) {
+  .admin-section {
+    padding: 65px 5%;
+  }
+
+  .admin-login,
+  .admin-dashboard {
+    padding: 20px;
+  }
+
+  .admin-top,
+  .admin-product-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
