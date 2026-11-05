@@ -131,9 +131,41 @@ function renderCart() {
     const price = document.createElement("p");
     price.textContent = ${item.price} HTG;
 
-    const quantity = document.createElement("span");
-    quantity.textContent = Quantité : ${item.quantity};
+   const quantityControls = document.createElement("div");
+quantityControls.className = "quantity-controls";
 
+const minus = document.createElement("button");
+minus.type = "button";
+minus.textContent = "−";
+
+const quantity = document.createElement("span");
+quantity.textContent = item.quantity;
+
+const plus = document.createElement("button");
+plus.type = "button";
+plus.textContent = "+";
+
+minus.addEventListener("click", () => {
+  if (item.quantity > 1) {
+    item.quantity--;
+  } else {
+    cart = cart.filter(product => product.id !== item.id);
+  }
+  saveCart();
+  renderCart();
+});
+
+plus.addEventListener("click", () => {
+  if (item.quantity < item.stock) {
+    item.quantity++;
+    saveCart();
+    renderCart();
+  } else {
+    toast("Stock insuffisant !");
+  }
+});
+
+quantityControls.append(minus, quantity, plus);
     const remove = document.createElement("button");
     remove.type = "button";
     remove.textContent = "Retirer";
