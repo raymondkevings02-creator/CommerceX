@@ -680,6 +680,53 @@
     </form>
   </div>
 </div>
+<!-- FORMULAIRE DE COMMANDE -->
+<div class="modal-overlay" id="checkoutOverlay" hidden>
+  <div class="modal checkout-modal">
+    <button type="button" class="modal-close" id="cancelCheckoutButton">×</button>
 
+    <h2>Finaliser ma commande</h2>
+    <p>Remplissez vos informations pour confirmer votre achat.</p>
+
+    <form id="checkoutForm">
+      <label for="customerName">Nom complet</label>
+      <input
+        type="text"
+        id="customerName"
+        placeholder="Votre nom complet"
+        required
+      >
+
+      <label for="customerPhone">Téléphone</label>
+      <input
+        type="tel"
+        id="customerPhone"
+        placeholder="Ex. : +509 0000 0000"
+        required
+      >
+
+      <label for="customerAddress">Adresse de livraison</label>
+      <textarea
+        id="customerAddress"
+        placeholder="Votre adresse complète"
+        rows="3"
+        required
+      ></textarea>
+
+      <div class="checkout-summary">
+        <span>Total à payer :</span>
+        <strong id="checkoutTotal">0 HTG</strong>
+      </div>
+
+      <p class="payment-info">Mode de paiement : paiement à la livraison.</p>
+
+      <p id="checkoutMessage" role="alert"></p>
+
+      <button type="submit" id="confirmOrderButton">
+        Confirmer la commande
+      </button>
+    </form>
+  </div>
+</div>
 </body>
 </html>
