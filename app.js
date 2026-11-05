@@ -307,7 +307,7 @@ function renderAdminProducts(products) {
     list.appendChild(message);
     return;
   }
-[04/11/2026 22:56] Raymond Kevings: products.forEach((product) => {
+    products.forEach((product) => {
     const item = document.createElement("div");
     item.className = "admin-product-item";
 
