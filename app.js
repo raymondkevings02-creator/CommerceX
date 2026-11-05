@@ -175,7 +175,7 @@ quantityControls.append(minus, quantity, plus);
       renderCart();
     });
 
-    line.append(name, price, quantity, remove);
+    line.append(name, price, quantityControls, remove);
     itemsContainer.appendChild(line);
   });
 
