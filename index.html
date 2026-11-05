@@ -618,6 +618,68 @@
   <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
+  
+<!-- FORMULAIRE DE COMMANDE COMMERCEX -->
+<div class="checkout-overlay" id="checkoutOverlay" hidden>
+  <div class="checkout-panel">
+    <button
+      type="button"
+      class="checkout-close"
+      id="cancelCheckoutButton"
+      aria-label="Fermer"
+    >×</button>
+
+    <h2>Finaliser ma commande</h2>
+    <p>Remplis tes informations pour confirmer ta commande.</p>
+
+    <form id="checkoutForm">
+      <label for="customerName">Nom complet</label>
+      <input
+        type="text"
+        id="customerName"
+        name="customerName"
+        placeholder="Ton nom complet"
+        required
+        maxlength="120"
+      >
+
+      <label for="customerPhone">Numéro de téléphone</label>
+      <input
+        type="tel"
+        id="customerPhone"
+        name="customerPhone"
+        placeholder="Ex. : 509 3700 0000"
+        required
+        maxlength="30"
+      >
+
+      <label for="customerAddress">Adresse de livraison</label>
+      <textarea
+        id="customerAddress"
+        name="customerAddress"
+        placeholder="Indique ton adresse complète"
+        required
+        maxlength="500"
+        rows="3"
+      ></textarea>
+
+      <div class="checkout-payment">
+        <strong>Mode de paiement</strong>
+        <p>Paiement à la livraison</p>
+      </div>
+
+      <p id="checkoutMessage" role="status"></p>
+
+      <button
+        type="submit"
+        id="confirmOrderButton"
+        class="primary-button"
+      >
+        Confirmer ma commande
+      </button>
+    </form>
+  </div>
+</div>
 
 </body>
 </html>
