@@ -1,0 +1,339 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#090d1b">
+  <meta name="description" content="Finalisez votre commande sur CommerceX.">
+
+  <title>Finaliser ma commande | CommerceX</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(98,230,237,.12), transparent 35%),
+        radial-gradient(circle at 90% 90%, rgba(155,130,255,.13), transparent 35%),
+        #090d1b;
+      color: #f5f7ff;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .checkout-page {
+      width: min(1100px, 92%);
+      margin: auto;
+      padding: 35px 0 70px;
+    }
+
+    .checkout-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 45px;
+    }
+
+    .checkout-logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: #62e6ed;
+      text-decoration: none;
+    }
+
+    .back-link {
+      color: #62e6ed;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .checkout-heading {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+
+    .checkout-heading h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(28px, 5vw, 42px);
+      margin-bottom: 10px;
+    }
+
+    .checkout-heading p {
+      color: #9aa6c0;
+    }
+
+    .checkout-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+      align-items: start;
+    }
+
+    .checkout-panel {
+      background: rgba(17,24,43,.92);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+
+    .checkout-panel h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 21px;
+      margin: 0 0 22px;
+    }
+
+    .checkout-product {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      padding: 15px 0;
+      border-bottom: 1px solid rgba(255,255,255,.09);
+    }
+
+    .checkout-product strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .checkout-product p {
+      margin: 4px 0;
+      color: #9aa6c0;
+      font-size: 14px;
+    }
+
+    .checkout-product p:last-child {
+      color: #62e6ed;
+      font-weight: 700;
+    }
+
+    .checkout-total {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,.12);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    #checkoutTotal {
+      color: #62e6ed;
+      text-align: right;
+    }
+
+    .checkout-field {
+      margin-bottom: 19px;
+    }
+
+    .checkout-field label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .checkout-field input,
+    .checkout-field textarea {
+      width: 100%;
+      padding: 14px 15px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 11px;
+      background: #090d1b;
+      color: #f5f7ff;
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+      transition: border .2s, box-shadow .2s;
+    }
+
+    .checkout-field input:focus,
+    .checkout-field textarea:focus {
+      border-color: #62e6ed;
+      box-shadow: 0 0 0 3px rgba(98,230,237,.1);
+    }
+
+    .checkout-field textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .payment-info {
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 12px;
+      background: rgba(98,230,237,.07);
+      border: 1px solid rgba(98,230,237,.2);
+      color: #c8d5e8;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .confirm-button {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      background: linear-gradient(110deg, #62e6ed, #9b82ff);
+      color: #090d1b;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .2s, opacity .2s;
+    }
+
+    .confirm-button:hover {
+      transform: translateY(-2px);
+    }
+
+    .confirm-button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #checkoutMessage {
+      margin-top: 18px;
+      text-align: center;
+      color: #62e6ed;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .checkout-security {
+      text-align: center;
+      color: #9aa6c0;
+      font-size: 13px;
+      margin-top: 25px;
+    }
+
+    @media(max-width: 750px) {
+      .checkout-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .checkout-panel {
+        padding: 21px;
+      }
+
+      .checkout-header {
+        margin-bottom: 30px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="checkout-page">
+
+    <header class="checkout-header">
+      <a href="index.html" class="checkout-logo">CommerceX</a>
+      <a href="index.html" class="back-link">← Retour à la boutique</a>
+    </header>
+
+    <section class="checkout-heading">
+      <h1>Finaliser ma commande</h1>
+      <p>Encore quelques informations pour recevoir votre commande.</p>
+    </section>
+
+    <div class="checkout-layout">
+
+      <!-- RÉCAPITULATIF DU PANIER -->
+
+      <section class="checkout-panel">
+        <h2>Votre panier</h2>
+
+        <div id="checkoutItems">
+          <p>Chargement des produits...</p>
+        </div>
+
+        <div class="checkout-total">
+          <span>Total à payer</span>
+          <span id="checkoutTotal">0 HTG</span>
+        </div>
+
+        <div class="payment-info">
+          <strong>Mode de paiement</strong>
+          <p>Paiement à la livraison.</p>
+          Vous pourrez régler votre commande au moment de sa réception.
+        </div>
+      </section>
+
+      <!-- INFORMATIONS DU CLIENT -->
+
+      <section class="checkout-panel">
+        <h2>Informations de livraison</h2>
+
+        <form id="checkoutForm">
+
+          <div class="checkout-field">
+            <label for="customerName">Nom complet *</label>
+            <input
+              type="text"
+              id="customerName"
+              name="customerName"
+              placeholder="Votre nom complet"
+              autocomplete="name"
+              required
+            >
+          </div>
+
+          <div class="checkout-field">
+            <label for="customerPhone">Téléphone *</label>
+            <input
+              type="tel"
+              id="customerPhone"
+              name="customerPhone"
+              placeholder="Ex. : +509 0000 0000"
+              autocomplete="tel"
+              required
+            >
+          </div>
+
+          <div class="checkout-field">
+            <label for="customerAddress">Adresse de livraison *</label>
+            <textarea
+              id="customerAddress"
+              name="customerAddress"
+              placeholder="Indiquez votre adresse complète, votre commune et les détails utiles pour la livraison..."
+              autocomplete="street-address"
+              required
+            ></textarea>
+          </div>
+
+          <button
+            type="submit"
+            id="confirmOrderButton"
+            class="confirm-button"
+          >
+            Confirmer ma commande
+          </button>
+
+          <p id="checkoutMessage" role="status" aria-live="polite"></p>
+
+        </form>
+
+        <p class="checkout-security">
+          🔒 Vos informations sont utilisées pour traiter votre commande.
+        </p>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
