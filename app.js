@@ -412,3 +412,4 @@ async function deleteProduct(product) {
 // ==========================================
 
 restoreAdminSession();
+loadProducts();
