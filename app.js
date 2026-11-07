@@ -335,11 +335,11 @@ image.className = "product-image";
 image.alt = product.name || "Image du produit";
 image.loading = "lazy";
 
-image.style.width = "100%";
-image.style.height = "230px";
+image.style.width = "50%";
+image.style.height = "200px";
 image.style.objectFit = "contain";
 image.style.display = "block";
-image.style.borderRadius = "12px";
+image.style.borderRadius = "5px";
 
 if (product.image_url && product.image_url.trim() !== "") {
   image.src = product.image_url;
