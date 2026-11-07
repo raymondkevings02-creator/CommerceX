@@ -1,4 +1,4 @@
-
+ 
 /* ==========================================
    COMMERCEX - APPLICATION JAVASCRIPT
    Supabase + Administration + Catalogue
@@ -328,39 +328,39 @@ async function loadProducts() {
     // AFFICHAGE DE L'IMAGE DU PRODUIT
 const imageContainer = document.createElement("div");
 imageContainer.className = "product-image-container";
-
+ 
 const image = document.createElement("img");
-
+ 
 image.className = "product-image";
 image.alt = product.name || "Image du produit";
 image.loading = "lazy";
-
+ 
 image.style.width = "50%";
 image.style.height = "200px";
 image.style.objectFit = "contain";
 image.style.display = "block";
 image.style.borderRadius = "5px";
-
+ 
 if (product.image_url && product.image_url.trim() !== "") {
   image.src = product.image_url;
-
+ 
   image.onerror = () => {
     console.error(
       "Image impossible à charger :",
       product.name,
       product.image_url
     );
-
+ 
     imageContainer.innerHTML =
       '<div class="image-error">Image indisponible</div>';
   };
 } else {
   imageContainer.innerHTML =
     '<div class="image-error">Aucune image enregistrée</div>';
-
+ 
   console.warn("Produit sans image :", product.name);
 }
-
+ 
 imageContainer.appendChild(image);
 card.appendChild(imageContainer);
  
@@ -1272,6 +1272,7 @@ function buildWhatsAppOrderMessage(orderId, customer, orderedItems) {
     "",
     "TOTAL : " + formatMoney(total),
     "",
+    "Groupe vendeurs : Complex et Pegasus Store",
     "Bonjour, je viens de passer cette commande sur CommerceX.",
     "Merci de me confirmer la disponibilité et la date prévue de livraison."
   ].join("\n");
@@ -1355,25 +1356,19 @@ function showWhatsAppShareButton() {
       }
     }
  
-    // Solution de secours pour les navigateurs sans partage de fichiers.
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: "Commande CommerceX",
-          text: orderMessage
-        });
-        return;
-      }
-    } catch (error) {
-      if (error.name === "AbortError") return;
-      console.warn("Partage du texte impossible :", error);
-    }
- 
+    // Solution de secours : copier le récapitulatif puis ouvrir le groupe.
+    // Les photos devront être ajoutées manuellement si le navigateur
+    // ne permet pas le partage natif des fichiers.
     try {
       await navigator.clipboard.writeText(orderMessage);
-      toast("Message copié. Colle-le dans le groupe WhatsApp.");
+      toast(
+        "Message copié. Le groupe WhatsApp va s'ouvrir ; colle le message et ajoute les photos."
+      );
     } catch (error) {
-      toast("Ouvre le groupe WhatsApp et envoie les informations de la commande.");
+      console.warn("Copie du message impossible :", error);
+      toast(
+        "Le groupe WhatsApp va s'ouvrir. Envoie le récapitulatif et ajoute les photos."
+      );
     }
  
     window.open(WHATSAPP_SELLERS_GROUP, "_blank", "noopener,noreferrer");
