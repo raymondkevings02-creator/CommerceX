@@ -1,4 +1,3 @@
-
 /* ==========================================
    COMMERCEX - APPLICATION JAVASCRIPT
    Supabase + Administration + Catalogue
@@ -397,7 +396,6 @@ async function loadProducts() {
     toast("Impossible de charger les produits.");
   }
 }
-
 // ==========================================
 // 5. CONNEXION ADMINISTRATEUR
 // ==========================================
@@ -801,18 +799,16 @@ async function loadOrders() {
 
     cachedOrders = orderList.map((order) => ({
       ...order,
-      order_items: orderItems.filter(
+      items: orderItems.filter(
         (item) => item.order_id === order.id
       )
     }));
 
-    updateOrderStats(cachedOrders);
-    renderOrders();
+    renderOrders(cachedOrders);
 
     if (message) {
-      message.textContent = cachedOrders.length
-        ? cachedOrders.length + " commande(s) trouvée(s)."
-        : "Aucune commande pour le moment.";
+      message.textContent =
+        cachedOrders.length + " commande(s) enregistrée(s).";
     }
 
   } catch (error) {
@@ -820,495 +816,386 @@ async function loadOrders() {
 
     if (message) {
       message.textContent =
-        "Impossible de charger les commandes. Vérifie les autorisations Supabase.";
+        "Impossible de charger les commandes.";
     }
-
-    toast("Erreur lors du chargement des commandes.");
   }
 }
-
-function updateOrderStats(orders) {
-  const totalOrders = orders.length;
-
-  const pendingOrders = orders.filter(
-    (order) => order.status === "En attente"
-  ).length;
-
-  const deliveredOrders = orders.filter(
-    (order) => order.status === "Livrée"
-  ).length;
-
-  const revenue = orders
-    .filter((order) => order.status !== "Annulée")
-    .reduce((sum, order) => sum + Number(order.total || 0), 0);
-
-  if ($("#totalOrdersCount")) {
-    $("#totalOrdersCount").textContent = totalOrders;
-  }
-
-  if ($("#pendingOrdersCount")) {
-    $("#pendingOrdersCount").textContent = pendingOrders;
-  }
-
-  if ($("#deliveredOrdersCount")) {
-    $("#deliveredOrdersCount").textContent = deliveredOrders;
-  }
-
-  if ($("#ordersRevenue")) {
-    $("#ordersRevenue").textContent = formatMoney(revenue);
-  }
-}
-
-function renderOrders() {
-  const list = $("#adminOrdersList");
-
-  if (!list) return;
-
-  list.replaceChildren();
-
-  const filter = $("#orderStatusFilter")?.value || "Toutes";
-
-  const filteredOrders = cachedOrders.filter((order) => {
-    return filter === "Toutes" || filter === ""
-      ? true
-      : order.status === filter;
-  });
-
-  if (filteredOrders.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "orders-empty";
-    empty.textContent = cachedOrders.length === 0
-      ? "Aucune commande reçue pour le moment."
-      : "Aucune commande ne correspond à ce filtre.";
-
-    list.appendChild(empty);
-    return;
-  }
-
-  filteredOrders.forEach((order) => {
-    const card = document.createElement("article");
-    card.className = "order-card";
-
-    const header = document.createElement("div");
-    header.className = "order-card-header";
-
-    const orderNumber = document.createElement("strong");
-    orderNumber.textContent =
-      "#" + order.id.slice(0, 8).toUpperCase();
-
-    const date = document.createElement("small");
-    date.textContent = formatDate(order.created_at);
-
-    header.append(orderNumber, date);
-
-    const customer = document.createElement("div");
-    customer.className = "order-customer-info";
-
-    const customerName = document.createElement("strong");
-    customerName.textContent = order.customer_name;
-
-    const phone = document.createElement("p");
-    phone.textContent = "Téléphone : " + order.customer_phone;
-
-    const address = document.createElement("p");
-    address.textContent = "Adresse : " + order.customer_address;
-
-    customer.append(customerName, phone, address);
-
-    const itemCount = document.createElement("p");
-    const quantity = (order.order_items || []).reduce(
-      (sum, item) => sum + Number(item.quantity || 0),
-      0
-    );
-
-    itemCount.textContent =
-      quantity + " article(s) dans cette commande";
-
-    const total = document.createElement("strong");
-    total.className = "order-total";
-    total.textContent = "Total : " + formatMoney(order.total);
-
-    const actions = document.createElement("div");
-    actions.className = "order-card-actions";
-
-    const statusSelect = document.createElement("select");
-    statusSelect.className = "order-status-select";
-
-    ORDER_STATUSES.forEach((status) => {
-      const option = document.createElement("option");
-      option.value = status;
-      option.textContent = status;
-      statusSelect.appendChild(option);
-    });
-
-    statusSelect.value = order.status;
-
-    statusSelect.addEventListener("change", async () => {
-      await updateOrderStatus(
-        order.id,
-        statusSelect.value,
-        statusSelect
-      );
-    });
-
-    const detailsButton = document.createElement("button");
-    detailsButton.type = "button";
-    detailsButton.className = "outline-button";
-    detailsButton.textContent = "Voir les détails";
-
-    detailsButton.addEventListener("click", () => {
-      showOrderDetails(order);
-    });
-
-    actions.append(statusSelect, detailsButton);
-
-    card.append(
-      header,
-      customer,
-      itemCount,
-      total,
-      actions
-    );
-
-    list.appendChild(card);
-  });
-}
-
-async function updateOrderStatus(orderId, newStatus, selectElement) {
-  if (!ORDER_STATUSES.includes(newStatus)) {
-    toast("Statut de commande invalide.");
-    await loadOrders();
-    return;
-  }
-
-  if (selectElement) selectElement.disabled = true;
-
-  try {
-    const { error } = await supabaseClient
-      .from("orders")
-      .update({ status: newStatus })
-      .eq("id", orderId);
-
-    if (error) throw error;
-
-    toast("Statut de la commande mis à jour.");
-
-    await loadOrders();
-
-  } catch (error) {
-    console.error("Erreur modification statut :", error);
-
-    toast("Impossible de modifier le statut.");
-
-    await loadOrders();
-
-  } finally {
-    if (selectElement) selectElement.disabled = false;
-  }
-}
-
-function showOrderDetails(order) {
-  const overlay = $("#orderDetailsOverlay");
-  const content = $("#orderDetailsContent");
-
-  if (!overlay || !content) {
-    toast("La fenêtre des détails est introuvable dans le HTML.");
-    return;
-  }
-
-  content.replaceChildren();
-
-  const title = document.createElement("h3");
-  title.textContent =
-    "Commande #" + order.id.slice(0, 8).toUpperCase();
-
-  const date = document.createElement("p");
-  date.textContent = "Date : " + formatDate(order.created_at);
-
-  const customerTitle = document.createElement("h4");
-  customerTitle.textContent = "Informations du client";
-
-  const customerName = document.createElement("p");
-  customerName.textContent = "Nom : " + order.customer_name;
-
-  const customerPhone = document.createElement("p");
-  customerPhone.textContent = "Téléphone : " + order.customer_phone;
-
-  const customerAddress = document.createElement("p");
-  customerAddress.textContent = "Adresse : " + order.customer_address;
-
-  const payment = document.createElement("p");
-  payment.textContent =
-    "Paiement : " + (order.payment_method || "Paiement à la livraison");
-
-  const status = document.createElement("p");
-  status.textContent = "Statut : " + order.status;
-
-  const productsTitle = document.createElement("h4");
-  productsTitle.textContent = "Produits commandés";
-
-  const productsList = document.createElement("div");
-  productsList.className = "order-details-products";
-
-  if (!order.order_items || order.order_items.length === 0) {
-    const empty = document.createElement("p");
-    empty.textContent = "Aucun article trouvé.";
-    productsList.appendChild(empty);
-  } else {
-    order.order_items.forEach((item) => {
-      const productLine = document.createElement("div");
-      productLine.className = "order-detail-item";
-
-      const productName = document.createElement("strong");
-      productName.textContent = item.product_name;
-
-      const productQuantity = document.createElement("p");
-      productQuantity.textContent = "Quantité : " + item.quantity;
-
-      const productPrice = document.createElement("p");
-      productPrice.textContent =
-        "Prix unitaire : " + formatMoney(item.unit_price);
-
-      const productSubtotal = document.createElement("p");
-      productSubtotal.textContent =
-        "Sous-total : " + formatMoney(item.subtotal);
-
-      productLine.append(
-        productName,
-        productQuantity,
-        productPrice,
-        productSubtotal
-      );
-
-      productsList.appendChild(productLine);
-    });
-  }
-
-  const total = document.createElement("h3");
-  total.className = "order-details-total";
-  total.textContent = "Total : " + formatMoney(order.total);
-
-  content.append(
-    title,
-    date,
-    customerTitle,
-    customerName,
-    customerPhone,
-    customerAddress,
-    payment,
-    status,
-    productsTitle,
-    productsList,
-    total
-  );
-
-  overlay.hidden = false;
-  overlay.classList.add("active");
-}
-
-$("#refreshOrdersButton")?.addEventListener("click", () => {
-  loadOrders();
-});
-
-$("#orderStatusFilter")?.addEventListener("change", () => {
-  renderOrders();
-});
-
-function closeOrderDetails() {
-  const overlay = $("#orderDetailsOverlay");
-
-  if (!overlay) return;
-
-  overlay.classList.remove("active");
-  overlay.hidden = true;
-}
-
-$("#closeOrderDetailsButton")?.addEventListener(
-  "click",
-  closeOrderDetails
-);
-
-$("#orderDetailsOverlay")?.addEventListener("click", (event) => {
-  if (event.target.id === "orderDetailsOverlay") {
-    closeOrderDetails();
-  }
-});
-
+cachedOrders = orderList.map((order) => ({
+  ...order,
+  order_items: orderItems.filter(
+    (item) => item.order_id === order.id
+  )
+}));
 // ==========================================
-// 12. PAGE INDÉPENDANTE CHECKOUT.HTML
+// 18. VALIDATION DE L'ADRESSE E-MAIL
 // ==========================================
-
-function calculateCheckoutTotal() {
-  return cart.reduce((total, item) => {
-    return total + Number(item.price) * Number(item.quantity);
-  }, 0);
-}
-
-function renderCheckoutPage() {
-  const container = $("#checkoutItems");
-  const totalElement = $("#checkoutTotal");
-
-  if (!container || !totalElement) return;
-
-  container.replaceChildren();
-
-  if (cart.length === 0) {
-    const message = document.createElement("p");
-    message.textContent = "Votre panier est vide.";
-    container.appendChild(message);
-
-    totalElement.textContent = formatMoney(0);
-    return;
-  }
-
-  cart.forEach((item) => {
-    const line = document.createElement("div");
-    line.className = "checkout-product";
-
-    if (item.image_url) {
-      const image = document.createElement("img");
-      image.src = item.image_url;
-      image.alt = item.name;
-      image.className = "checkout-product-image";
-      image.loading = "lazy";
-
-      image.onerror = () => {
-        image.style.display = "none";
-      };
-
-      line.appendChild(image);
-    }
-
-    const details = document.createElement("div");
-
-    const name = document.createElement("strong");
-    name.textContent = item.name;
-
-    const quantity = document.createElement("p");
-    quantity.textContent = "Quantité : " + item.quantity;
-
-    const subtotal = document.createElement("p");
-    subtotal.textContent =
-      "Sous-total : " +
-      formatMoney(Number(item.price) * Number(item.quantity));
-
-    details.append(name, quantity, subtotal);
-    line.appendChild(details);
-
-    container.appendChild(line);
-  });
-
-  totalElement.textContent = formatMoney(
-    calculateCheckoutTotal()
-  );
-}
-
-// Validation de l'adresse e-mail
 
 function isValidCustomerEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 // ==========================================
-// SOUMISSION DE LA COMMANDE
+// 19. PARTAGE DE COMMANDE ET PHOTOS WHATSAPP
 // ==========================================
 
-$("#checkoutForm")?.addEventListener("submit", async (event) => {
-  event.preventDefault();
+const WHATSAPP_SELLERS_GROUP =
+  "https://chat.whatsapp.com/Fy9aaXnHuJG9vsDqW8d38i?s=cl&p=a&mlu=4&ilr=4&iam=2";
 
-  const button = $("#confirmOrderButton");
+let commerceXShareData = null;
+
+// Construire le message de commande
+
+function buildWhatsAppOrderMessage(orderId, customer, orderedItems) {
+  const reference =
+    "CX-" + String(orderId).slice(0, 8).toUpperCase();
+
+  const productLines = orderedItems.map((item, index) => {
+    const subtotal = Number(item.price) * Number(item.quantity);
+
+    return (
+      (index + 1) + ". " + item.name +
+      "\n   Quantité : " + item.quantity +
+      "\n   Prix unitaire : " + formatMoney(item.price) +
+      "\n   Sous-total : " + formatMoney(subtotal)
+    );
+  });
+
+  const total = orderedItems.reduce((sum, item) => {
+    return sum + Number(item.price) * Number(item.quantity);
+  }, 0);
+
+  return [
+    "🛍️ NOUVELLE COMMANDE COMMERCEX",
+    "",
+    "Référence : " + reference,
+    "Client : " + customer.name,
+    "E-mail : " + customer.email,
+    "Téléphone : " + customer.phone,
+    "Adresse : " + customer.address,
+    "",
+    "ARTICLES COMMANDÉS :",
+    productLines.join("\n\n"),
+    "",
+    "TOTAL : " + formatMoney(total),
+    "",
+    "Bonjour, je viens de passer cette commande sur CommerceX.",
+    "Merci de me confirmer la disponibilité et la date prévue de livraison."
+  ].join("\n");
+}
+
+// Préparer les photos des produits
+
+async function prepareWhatsAppOrderShare(
+  orderId,
+  customer,
+  orderedItems
+) {
+  const message = buildWhatsAppOrderMessage(
+    orderId,
+    customer,
+    orderedItems
+  );
+
+  const files = [];
+
+  for (let index = 0; index < orderedItems.length; index++) {
+    const item = orderedItems[index];
+
+    if (!item.image_url) continue;
+
+    try {
+      const response = await fetch(
+        item.image_url,
+        { mode: "cors" }
+      );
+
+      if (!response.ok) {
+        throw new Error("Photo inaccessible");
+      }
+
+      const blob = await response.blob();
+
+      if (!blob.type.startsWith("image/")) {
+        throw new Error("Le fichier récupéré n'est pas une image");
+      }
+
+      const extension = blob.type
+        .split("/")[1]
+        .replace("jpeg", "jpg")
+        .split(";")[0];
+
+      const safeName = String(item.name || "article")
+        .replace(/[^a-z0-9-_]/gi, "-")
+        .slice(0, 35);
+
+      files.push(
+        new File(
+          [blob],
+          "CommerceX-" + (index + 1) + "-" +
+          safeName + "." + extension,
+          { type: blob.type }
+        )
+      );
+
+    } catch (error) {
+      console.warn(
+        "Photo non préparée pour WhatsApp :",
+        item.name,
+        error
+      );
+    }
+  }
+
+  commerceXShareData = {
+    message,
+    files
+  };
+
+  return files.length;
+}
+
+// ==========================================
+// 20. BOUTON DE PARTAGE WHATSAPP
+// ==========================================
+
+function showWhatsAppShareButton() {
   const message = $("#checkoutMessage");
 
-  if (!button) return;
+  if (!message) return;
 
-  if (cart.length === 0) {
-    if (message) {
-      message.textContent = "Votre panier est vide.";
+  $("#shareWhatsAppOrderButton")?.remove();
+
+  const shareButton = document.createElement("button");
+
+  shareButton.type = "button";
+  shareButton.id = "shareWhatsAppOrderButton";
+  shareButton.className = "btn btn-primary";
+
+  shareButton.textContent =
+    "Partager la commande et les photos sur WhatsApp";
+
+  shareButton.addEventListener("click", async () => {
+    if (!commerceXShareData) {
+      toast("Le récapitulatif de commande n'est pas encore prêt.");
+      return;
     }
-    return;
-  }
 
-  const customerName = $("#customerName")?.value.trim() || "";
-  const customerEmail = $("#customerEmail")?.value.trim() || "";
-  const customerPhone = $("#customerPhone")?.value.trim() || "";
-  const customerAddress = $("#customerAddress")?.value.trim() || "";
+    const {
+      message: orderMessage,
+      files
+    } = commerceXShareData;
 
-  if (
-    !customerName ||
-    !customerEmail ||
-    !customerPhone ||
-    !customerAddress
-  ) {
-    if (message) {
-      message.textContent =
-        "Remplis toutes les informations obligatoires.";
-    }
-    return;
-  }
+    // Partage du message et des photos
 
-  if (!isValidCustomerEmail(customerEmail)) {
-    if (message) {
-      message.textContent =
-        "Entre une adresse e-mail valide.";
-    }
-    return;
-  }
+    if (
+      files.length > 0 &&
+      navigator.share &&
+      navigator.canShare &&
+      navigator.canShare({ files })
+    ) {
+      try {
+        await navigator.share({
+          title: "Commande CommerceX",
+          text: orderMessage,
+          files
+        });
 
-  button.disabled = true;
-  button.textContent = "Enregistrement...";
+        return;
 
-  if (message) {
-    message.textContent =
-      "Enregistrement de ta commande...";
-  }
+      } catch (error) {
+        if (error.name === "AbortError") return;
 
-  try {
-    // Préparer les produits
-    const items = cart.map((item) => ({
-      product_id: item.id,
-      quantity: Number(item.quantity)
-    }));
-
-    // 1. Créer la commande dans Supabase
-
-    const { data, error } = await supabaseClient.rpc(
-      "create_commercex_order",
-      {
-        p_customer_name: customerName,
-        p_customer_phone: customerPhone,
-        p_customer_address: customerAddress,
-        p_items: items
+        console.warn(
+          "Partage avec photos impossible :",
+          error
+        );
       }
-    );
+    }
 
-    if (error) throw error;
+    // Partage du texte si les photos ne sont pas compatibles
 
-    if (!data) {
-      throw new Error(
-        "La commande n'a pas été confirmée par le serveur."
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Commande CommerceX",
+          text: orderMessage
+        });
+
+        return;
+      }
+
+    } catch (error) {
+      if (error.name === "AbortError") return;
+
+      console.warn(
+        "Partage du texte impossible :",
+        error
       );
     }
 
-    const orderId = data;
+    // Solution de secours : copier le message
 
-    // 2. Vider le panier après confirmation
+    try {
+      await navigator.clipboard.writeText(orderMessage);
 
-    cart = [];
-    saveCart();
-    renderCart();
+      toast(
+        "Message copié. Colle-le dans le groupe WhatsApp."
+      );
 
-    // 3. Envoyer les e-mails
+    } catch (error) {
+      toast(
+        "Ouvre le groupe WhatsApp et envoie les informations de la commande."
+      );
+    }
 
-    let emailSent = false;
+    window.open(
+      WHATSAPP_SELLERS_GROUP,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  });
+
+  message.insertAdjacentElement(
+    "afterend",
+    shareButton
+  );
+}
+
+// ==========================================
+// 21. SOUMISSION DE LA COMMANDE
+// ==========================================
+
+$("#checkoutForm")?.addEventListener(
+  "submit",
+  async (event) => {
+    event.preventDefault();
+
+    const button = $("#confirmOrderButton");
+    const message = $("#checkoutMessage");
+
+    if (!button) return;
+
+    if (cart.length === 0) {
+      if (message) {
+        message.textContent = "Votre panier est vide.";
+      }
+
+      return;
+    }
+
+    const customerName =
+      $("#customerName")?.value.trim() || "";
+
+    const customerEmail =
+      $("#customerEmail")?.value.trim() || "";
+
+    const customerPhone =
+      $("#customerPhone")?.value.trim() || "";
+
+    const customerAddress =
+      $("#customerAddress")?.value.trim() || "";
+
+    if (
+      !customerName ||
+      !customerEmail ||
+      !customerPhone ||
+      !customerAddress
+    ) {
+      if (message) {
+        message.textContent =
+          "Remplis toutes les informations obligatoires.";
+      }
+
+      return;
+    }
+
+    if (!isValidCustomerEmail(customerEmail)) {
+      if (message) {
+        message.textContent =
+          "Entre une adresse e-mail valide.";
+      }
+
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Enregistrement...";
 
     if (message) {
       message.textContent =
-        "Commande enregistrée. Envoi des notifications...";
+        "Enregistrement de ta commande...";
     }
 
     try {
-      const { data: emailResult, error: emailError } =
-        await supabaseClient.functions.invoke(
+      // Conserver les articles, prix et photos
+      // avant de vider le panier.
+
+      const orderedItems = cart.map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: Number(item.price),
+        quantity: Number(item.quantity),
+        image_url: item.image_url || ""
+      }));
+
+      const customerInfo = {
+        name: customerName,
+        email: customerEmail,
+        phone: customerPhone,
+        address: customerAddress
+      };
+
+      // Préparer les produits pour Supabase
+
+      const items = orderedItems.map((item) => ({
+        product_id: item.id,
+        quantity: Number(item.quantity)
+      }));
+
+      // 1. Créer la commande dans Supabase
+
+      const { data, error } =
+        await supabaseClient.rpc(
+          "create_commercex_order",
+          {
+            p_customer_name: customerName,
+            p_customer_phone: customerPhone,
+            p_customer_address: customerAddress,
+            p_items: items
+          }
+        );
+
+      if (error) throw error;
+
+      if (!data) {
+        throw new Error(
+          "La commande n'a pas été confirmée par le serveur."
+        );
+      }
+
+      const orderId = data;
+
+      // 2. Vider le panier après confirmation
+
+      cart = [];
+
+      saveCart();
+      renderCart();
+
+      // 3. Envoyer les e-mails
+
+      let emailSent = false;
+
+      if (message) {
+        message.textContent =
+          "Commande enregistrée. Envoi des notifications...";
+      }
+
+      try {
+        const {
+          data: emailResult,
+          error: emailError
+        } = await supabaseClient.functions.invoke(
           "send-order-email",
           {
             body: {
@@ -1318,81 +1205,111 @@ $("#checkoutForm")?.addEventListener("submit", async (event) => {
           }
         );
 
-      if (emailError) throw emailError;
+        if (emailError) throw emailError;
 
-      if (emailResult?.error) {
-        throw new Error(emailResult.error);
+        if (emailResult?.error) {
+          throw new Error(emailResult.error);
+        }
+
+        emailSent = true;
+
+        console.log(
+          "Résultat des e-mails :",
+          emailResult
+        );
+
+      } catch (emailError) {
+        console.error(
+          "Erreur e-mail :",
+          emailError
+        );
       }
 
-      emailSent = true;
+      // 4. Confirmer la commande
 
-      console.log("Résultat des e-mails :", emailResult);
+      $("#checkoutForm").reset();
 
-    } catch (emailError) {
-      console.error("Erreur e-mail :", emailError);
+      if (message) {
+        message.textContent = emailSent
+          ? "Commande confirmée ! Une notification par e-mail a été envoyée. Préparation du partage WhatsApp..."
+          : "Commande enregistrée avec succès. Préparation du partage WhatsApp...";
+      }
+
+      toast(
+        "Commande confirmée ! Référence : CX-" +
+        String(orderId).slice(0, 8).toUpperCase()
+      );
+
+      renderCheckoutPage();
+
+      // 5. Préparer les photos et le récapitulatif
+
+      const preparedPhotoCount =
+        await prepareWhatsAppOrderShare(
+          orderId,
+          customerInfo,
+          orderedItems
+        );
+
+      if (message) {
+        message.textContent = preparedPhotoCount > 0
+          ? "Ta commande est enregistrée. " +
+            preparedPhotoCount +
+            " photo(s) prête(s) à être partagée(s) avec le récapitulatif. Clique ci-dessous, puis sélectionne le groupe WhatsApp des vendeurs."
+          : "Ta commande est enregistrée. Le récapitulatif est prêt. Clique ci-dessous pour le partager dans le groupe WhatsApp des vendeurs. Les photos pourront être ajoutées manuellement si ton navigateur ne permet pas leur partage automatique.";
+      }
+
+      // 6. Afficher le bouton WhatsApp
+
+      showWhatsAppShareButton();
+
+    } catch (error) {
+      console.error(
+        "Erreur commande :",
+        error
+      );
+
+      if (message) {
+        message.textContent =
+          error.message ||
+          "Impossible d'enregistrer la commande.";
+      }
+
+      toast("Impossible d'enregistrer la commande.");
+
+    } finally {
+      button.disabled = false;
+
+      button.textContent =
+        "Confirmer ma commande";
     }
-
-    // 4. Afficher la confirmation
-
-    $("#checkoutForm").reset();
-
-    if (message) {
-      message.textContent = emailSent
-        ? "Commande confirmée ! Un e-mail détaillé a été envoyé à " +
-          customerEmail +
-          ". La livraison est prévue dans les prochaines 24 heures."
-        : "Commande enregistrée avec succès. L'envoi de l'e-mail est en attente de vérification.";
-    }
-
-    toast(
-      "Commande confirmée ! Référence : " +
-      String(orderId).slice(0, 8).toUpperCase()
-    );
-
-    renderCheckoutPage();
-
-    // 5. Retour à la boutique
-
-    setTimeout(() => {
-      window.location.href = "index.html";
-    }, 6000);
-
-  } catch (error) {
-    console.error("Erreur commande :", error);
-
-    if (message) {
-      message.textContent =
-        error.message ||
-        "Impossible d'enregistrer la commande.";
-    }
-
-    toast("Impossible d'enregistrer la commande.");
-
-  } finally {
-    button.disabled = false;
-    button.textContent = "Confirmer ma commande";
   }
-});
+);
 
-// Afficher les articles de la page checkout
+// ==========================================
+// 22. AFFICHER LES ARTICLES DU CHECKOUT
+// ==========================================
 
 renderCheckoutPage();
 
 // ==========================================
-// 13. FERMETURE AVEC ÉCHAP
+// 23. FERMETURE AVEC LA TOUCHE ÉCHAP
 // ==========================================
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     $("#cartOverlay")?.classList.remove("active");
+
     closeOrderDetails();
   }
 });
 
 // ==========================================
-// 14. DÉMARRAGE DE L'APPLICATION
+// 24. DÉMARRAGE DE L'APPLICATION
 // ==========================================
 
 renderCart();
+
 loadProducts();
+
 restoreAdminSession();
