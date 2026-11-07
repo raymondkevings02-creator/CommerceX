@@ -325,20 +325,44 @@ async function loadProducts() {
       const card = document.createElement("article");
       card.className = "product-card";
  
-      if (product.image_url) {
-        const image = document.createElement("img");
- 
-        image.className = "product-image";
-        image.src = product.image_url;
-        image.alt = product.name;
-        image.loading = "lazy";
- 
-        image.onerror = () => {
-          image.style.display = "none";
-        };
- 
-        card.appendChild(image);
-      }
+    // AFFICHAGE DE L'IMAGE DU PRODUIT
+const imageContainer = document.createElement("div");
+imageContainer.className = "product-image-container";
+
+const image = document.createElement("img");
+
+image.className = "product-image";
+image.alt = product.name || "Image du produit";
+image.loading = "lazy";
+
+image.style.width = "100%";
+image.style.height = "230px";
+image.style.objectFit = "contain";
+image.style.display = "block";
+image.style.borderRadius = "12px";
+
+if (product.image_url && product.image_url.trim() !== "") {
+  image.src = product.image_url;
+
+  image.onerror = () => {
+    console.error(
+      "Image impossible à charger :",
+      product.name,
+      product.image_url
+    );
+
+    imageContainer.innerHTML =
+      '<div class="image-error">Image indisponible</div>';
+  };
+} else {
+  imageContainer.innerHTML =
+    '<div class="image-error">Aucune image enregistrée</div>';
+
+  console.warn("Produit sans image :", product.name);
+}
+
+imageContainer.appendChild(image);
+card.appendChild(imageContainer);
  
       const details = document.createElement("div");
       details.className = "product-details";
