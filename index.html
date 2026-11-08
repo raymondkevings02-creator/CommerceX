@@ -17,10 +17,12 @@
 
 <body>
 
+  <!-- ANNONCE -->
   <div class="announcement">
     Bienvenue chez CommerceX <span>•</span> Paiement à la livraison
   </div>
 
+  <!-- EN-TÊTE -->
   <header class="site-header">
     <a class="brand" href="#" aria-label="CommerceX accueil">
       <span class="brand-mark">C</span>
@@ -35,12 +37,20 @@
     </nav>
 
     <div class="header-actions">
+
+      <!-- COMPTE CLIENT -->
+      <button class="outline-button" id="accountButton" type="button">
+        Mon compte
+      </button>
+
       <button class="icon-button" id="searchToggle" aria-label="Rechercher">
         <span>⌕</span>
       </button>
+
       <button class="cart-button" id="cartButton" aria-label="Ouvrir le panier">
         Panier <span id="cartCount">0</span>
       </button>
+
       <button class="menu-button" id="menuToggle" aria-label="Ouvrir le menu">☰</button>
     </div>
   </header>
@@ -138,11 +148,13 @@
           <b>Mode & accessoires</b>
           <span class="category-arrow">↗</span>
         </a>
+
         <a class="category-card category-two" href="#produits">
           <span class="category-number">02 / ESSENTIELS</span>
           <b>Maison & quotidien</b>
           <span class="category-arrow">↗</span>
         </a>
+
         <a class="category-card category-three" href="#produits">
           <span class="category-number">03 / TECHNO</span>
           <b>Tech & gadgets</b>
@@ -264,14 +276,17 @@
               <span>Total des commandes</span>
               <strong id="totalOrdersCount">0</strong>
             </div>
+
             <div class="order-stat-card">
               <span>En attente</span>
               <strong id="pendingOrdersCount">0</strong>
             </div>
+
             <div class="order-stat-card">
               <span>Commandes livrées</span>
               <strong id="deliveredOrdersCount">0</strong>
             </div>
+
             <div class="order-stat-card">
               <span>Montant des commandes</span>
               <strong id="ordersRevenue">0 HTG</strong>
@@ -280,6 +295,7 @@
 
           <div class="orders-toolbar">
             <h4>Liste des commandes reçues</h4>
+
             <select id="orderStatusFilter">
               <option value="Toutes">Toutes les commandes</option>
               <option value="En attente">En attente</option>
@@ -320,6 +336,7 @@
           <h3>Détails de la commande</h3>
           <button type="button" class="outline-button" id="closeOrderDetailsButton">✕</button>
         </div>
+
         <div id="orderDetailsContent"></div>
       </div>
     </div>
@@ -330,6 +347,7 @@
         <div class="eyebrow">BIENVENUE DANS L'UNIVERS COMMERCEX</div>
         <h2>Le bon choix,<br><span>en toute simplicité.</span></h2>
       </div>
+
       <p>
         CommerceX a pour ambition de rendre le shopping en ligne
         plus agréable. Parcourez, choisissez et commandez depuis
@@ -350,12 +368,94 @@
     <span class="footer-currency">Prix affichés en HTG · Gourdes haïtiennes</span>
   </footer>
 
+  <!-- ESPACE CLIENT : INSCRIPTION ET CONNEXION -->
+  <div class="checkout-overlay" id="authOverlay" hidden>
+    <div class="checkout-panel">
+
+      <button
+        type="button"
+        class="checkout-close"
+        id="closeAuthButton"
+        aria-label="Fermer"
+      >×</button>
+
+      <h2 id="authTitle">Mon compte CommerceX</h2>
+
+      <p id="authDescription">
+        Connecte-toi pour retrouver ton panier personnel.
+      </p>
+
+      <div class="auth-switch">
+        <button type="button" id="showLoginButton" class="primary-button">
+          Connexion
+        </button>
+
+        <button type="button" id="showRegisterButton" class="outline-button">
+          Inscription
+        </button>
+      </div>
+
+      <form id="authForm">
+
+        <div id="registerNameGroup" hidden>
+          <label for="registerName">Nom complet</label>
+          <input
+            type="text"
+            id="registerName"
+            placeholder="Ton nom complet"
+            maxlength="120"
+          >
+        </div>
+
+        <label for="authEmail">Adresse e-mail</label>
+        <input
+          type="email"
+          id="authEmail"
+          placeholder="exemple@email.com"
+          autocomplete="email"
+          required
+        >
+
+        <label for="authPassword">Mot de passe</label>
+        <input
+          type="password"
+          id="authPassword"
+          placeholder="Au moins 6 caractères"
+          autocomplete="current-password"
+          minlength="6"
+          required
+        >
+
+        <p id="authMessage" role="status"></p>
+
+        <button type="submit" id="authSubmitButton" class="primary-button">
+          Se connecter
+        </button>
+      </form>
+
+      <div id="customerAccountInfo" hidden>
+        <p id="customerEmailDisplay"></p>
+      </div>
+
+      <button
+        type="button"
+        id="customerLogoutButton"
+        class="outline-button"
+        hidden
+      >
+        Déconnexion
+      </button>
+
+    </div>
+  </div>
+
   <!-- NOTIFICATIONS -->
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <!-- FORMULAIRE UNIQUE DE COMMANDE -->
+  <!-- FORMULAIRE DE COMMANDE -->
   <div class="checkout-overlay" id="checkoutOverlay" hidden>
     <div class="checkout-panel">
+
       <button
         type="button"
         class="checkout-close"
@@ -364,9 +464,11 @@
       >×</button>
 
       <h2>Finaliser ma commande</h2>
+
       <p>Remplis tes informations pour confirmer ta commande.</p>
 
       <form id="checkoutForm">
+
         <label for="customerName">Nom complet</label>
         <input
           type="text"
@@ -375,6 +477,16 @@
           placeholder="Ton nom complet"
           required
           maxlength="120"
+        >
+
+        <label for="customerEmail">Adresse e-mail</label>
+        <input
+          type="email"
+          id="customerEmail"
+          name="customerEmail"
+          placeholder="Ton adresse e-mail"
+          autocomplete="email"
+          required
         >
 
         <label for="customerPhone">Numéro de téléphone</label>
@@ -416,11 +528,12 @@
         >
           Confirmer ma commande
         </button>
+
       </form>
     </div>
   </div>
 
-  <!-- SCRIPTS : chargés après le HTML -->
+  <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 
